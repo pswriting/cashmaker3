@@ -330,7 +330,7 @@ def ask_ai(system_role, prompt, temperature=0.7):
 def create_book_cover(title, subtitle, style="gradient"):
     """전자책 표지 이미지 생성"""
     width, height = 800, 1200
-    img = Image.new('RGB', (width, height), color='white')
+    img = Image.new('RGBA', (width, height), color='white')
     draw = ImageDraw.Draw(img)
     
     # 배경 그라데이션 효과
@@ -373,7 +373,7 @@ def create_book_cover(title, subtitle, style="gradient"):
         sub_bbox = draw.textbbox((0, 0), subtitle, font=subtitle_font)
         sub_width = sub_bbox[2] - sub_bbox[0]
         sub_x = (width - sub_width) // 2
-        draw.text((sub_x, 600), subtitle, font=subtitle_font, fill='rgba(255,255,255,0.9)')
+        draw.text((sub_x, 600), subtitle, font=subtitle_font, fill=(230, 230, 230))
     
     # 하단 장식 라인
     draw.rectangle([(100, height - 150), (width - 100, height - 145)], fill='white')
@@ -383,7 +383,7 @@ def create_book_cover(title, subtitle, style="gradient"):
 def create_thumbnail(title, style="modern"):
     """크몽 썸네일 이미지 생성 (800x600)"""
     width, height = 800, 600
-    img = Image.new('RGB', (width, height), color='white')
+    img = Image.new('RGBA', (width, height), color='white')
     draw = ImageDraw.Draw(img)
     
     # 배경
@@ -440,7 +440,7 @@ def create_thumbnail(title, style="modern"):
 def create_sales_page_image(headline, subheadline, cta_text):
     """상세페이지 헤더 이미지 생성"""
     width, height = 1200, 800
-    img = Image.new('RGB', (width, height), color='white')
+    img = Image.new('RGBA', (width, height), color='white')
     draw = ImageDraw.Draw(img)
     
     # 그라데이션 배경
@@ -473,7 +473,7 @@ def create_sales_page_image(headline, subheadline, cta_text):
     y_pos += 30
     bbox = draw.textbbox((0, 0), subheadline, font=sub_font)
     x = (width - (bbox[2] - bbox[0])) // 2
-    draw.text((x, y_pos), subheadline, font=sub_font, fill='#aaaaaa')
+    draw.text((x, y_pos), subheadline, font=sub_font, fill=(170, 170, 170))
     
     # CTA 버튼
     btn_width, btn_height = 300, 60
