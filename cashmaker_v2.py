@@ -3,10 +3,12 @@ import google.generativeai as genai
 import re
 import json
 import io
-from datetime import datetime
-from PIL import Image, ImageDraw, ImageFont
+import os
 import requests
+from datetime import datetime
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 from io import BytesIO
+import tempfile
 
 # --- 페이지 설정 ---
 st.set_page_config(
@@ -14,6 +16,28 @@ st.set_page_config(
     layout="wide", 
     page_icon="💰"
 )
+
+# --- 한글 폰트 다운로드 및 캐싱 ---
+@st.cache_resource
+def get_korean_font(size=60, weight="Bold"):
+    """한글 폰트 다운로드 및 로드"""
+    font_urls = {
+        "Bold": "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/Korean/NotoSansCJKkr-Bold.otf",
+        "Regular": "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf",
+        "Black": "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/Korean/NotoSansCJKkr-Black.otf",
+        "Medium": "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/Korean/NotoSansCJKkr-Medium.otf",
+    }
+    
+    try:
+        url = font_urls.get(weight, font_urls["Bold"])
+        response = requests.get(url, timeout=30)
+        if response.status_code == 200:
+            font_data = BytesIO(response.content)
+            return ImageFont.truetype(font_data, size)
+    except Exception as e:
+        st.warning(f"폰트 로드 실패: {e}")
+    
+    return ImageFont.load_default()
 
 # --- CSS 스타일 ---
 st.markdown("""
@@ -195,28 +219,12 @@ st.markdown("""
         margin-top: 5px;
     }
     
-    .design-preview {
-        border: 1px solid #ddd;
-        border-radius: 12px;
-        padding: 20px;
-        background: #fafafa;
-        text-align: center;
-    }
-    
     .funnel-step {
         background: #f0f0f0;
         border-radius: 10px;
         padding: 15px;
         margin: 10px 0;
         border-left: 4px solid #667eea;
-    }
-    
-    .email-template {
-        background: #ffffff;
-        border: 1px solid #ddd;
-        border-radius: 10px;
-        padding: 20px;
-        margin: 15px 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -326,174 +334,376 @@ def ask_ai(system_role, prompt, temperature=0.7):
     except Exception as e:
         return f"오류 발생: {str(e)}"
 
-# --- 이미지 생성 함수 ---
-def create_book_cover(title, subtitle, style="gradient"):
-    """전자책 표지 이미지 생성"""
+# --- 전문가급 이미지 생성 함수 ---
+def create_book_cover(title, subtitle, style="premium_dark"):
+    """프리미엄 전자책 표지 이미지 생성"""
     width, height = 800, 1200
-    img = Image.new('RGBA', (width, height), color='white')
-    draw = ImageDraw.Draw(img)
     
-    # 배경 그라데이션 효과
-    if style == "gradient":
-        for i in range(height):
-            r = int(102 + (118 - 102) * i / height)
-            g = int(126 + (75 - 126) * i / height)
-            b = int(234 + (162 - 234) * i / height)
-            draw.line([(0, i), (width, i)], fill=(r, g, b))
-    elif style == "dark":
-        for i in range(height):
-            c = int(20 + 15 * i / height)
-            draw.line([(0, i), (width, i)], fill=(c, c, c))
-    elif style == "warm":
-        for i in range(height):
-            r = int(255 - 30 * i / height)
-            g = int(120 + 50 * i / height)
-            b = int(50 + 30 * i / height)
-            draw.line([(0, i), (width, i)], fill=(r, g, b))
+    # 폰트 로드
+    title_font = get_korean_font(72, "Black")
+    subtitle_font = get_korean_font(28, "Regular")
+    author_font = get_korean_font(20, "Medium")
     
-    # 텍스트 (기본 폰트 사용)
-    try:
-        title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 60)
-        subtitle_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 30)
-    except:
-        title_font = ImageFont.load_default()
-        subtitle_font = ImageFont.load_default()
+    # 스타일별 설정
+    styles = {
+        "premium_dark": {
+            "bg_colors": [(15, 15, 25), (35, 35, 55)],
+            "accent": (255, 215, 0),  # 골드
+            "text_color": (255, 255, 255),
+            "sub_color": (180, 180, 180),
+        },
+        "modern_gradient": {
+            "bg_colors": [(102, 126, 234), (118, 75, 162)],
+            "accent": (255, 255, 255),
+            "text_color": (255, 255, 255),
+            "sub_color": (220, 220, 255),
+        },
+        "elegant_white": {
+            "bg_colors": [(250, 250, 250), (235, 235, 240)],
+            "accent": (30, 30, 30),
+            "text_color": (20, 20, 20),
+            "sub_color": (100, 100, 100),
+        },
+        "bold_red": {
+            "bg_colors": [(180, 40, 50), (120, 20, 30)],
+            "accent": (255, 255, 255),
+            "text_color": (255, 255, 255),
+            "sub_color": (255, 200, 200),
+        },
+        "professional_navy": {
+            "bg_colors": [(20, 40, 80), (10, 25, 50)],
+            "accent": (100, 200, 255),
+            "text_color": (255, 255, 255),
+            "sub_color": (180, 200, 220),
+        },
+    }
     
-    # 제목 중앙 배치
-    title_bbox = draw.textbbox((0, 0), title, font=title_font)
-    title_width = title_bbox[2] - title_bbox[0]
-    title_x = (width - title_width) // 2
+    s = styles.get(style, styles["premium_dark"])
     
-    # 그림자 효과
-    draw.text((title_x + 3, 503), title, font=title_font, fill=(0, 0, 0, 100))
-    draw.text((title_x, 500), title, font=title_font, fill='white')
-    
-    # 부제목
-    if subtitle:
-        sub_bbox = draw.textbbox((0, 0), subtitle, font=subtitle_font)
-        sub_width = sub_bbox[2] - sub_bbox[0]
-        sub_x = (width - sub_width) // 2
-        draw.text((sub_x, 600), subtitle, font=subtitle_font, fill=(230, 230, 230))
-    
-    # 하단 장식 라인
-    draw.rectangle([(100, height - 150), (width - 100, height - 145)], fill='white')
-    
-    return img
-
-def create_thumbnail(title, style="modern"):
-    """크몽 썸네일 이미지 생성 (800x600)"""
-    width, height = 800, 600
-    img = Image.new('RGBA', (width, height), color='white')
-    draw = ImageDraw.Draw(img)
-    
-    # 배경
-    if style == "modern":
-        for i in range(height):
-            r = int(102 + (118 - 102) * i / height)
-            g = int(126 + (75 - 126) * i / height)
-            b = int(234 + (162 - 234) * i / height)
-            draw.line([(0, i), (width, i)], fill=(r, g, b))
-    elif style == "professional":
-        draw.rectangle([(0, 0), (width, height)], fill=(30, 30, 40))
-        # 악센트 라인
-        draw.rectangle([(0, height-10), (width, height)], fill=(102, 126, 234))
-    elif style == "bright":
-        draw.rectangle([(0, 0), (width, height)], fill=(255, 250, 240))
-        draw.rectangle([(0, 0), (width, 8)], fill=(255, 100, 100))
-    
-    try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 48)
-    except:
-        font = ImageFont.load_default()
-    
-    # 텍스트 줄바꿈 처리
-    words = title.split()
-    lines = []
-    current_line = ""
-    for word in words:
-        test_line = current_line + " " + word if current_line else word
-        bbox = draw.textbbox((0, 0), test_line, font=font)
-        if bbox[2] - bbox[0] < width - 100:
-            current_line = test_line
-        else:
-            if current_line:
-                lines.append(current_line)
-            current_line = word
-    if current_line:
-        lines.append(current_line)
-    
-    # 텍스트 그리기
-    total_height = len(lines) * 60
-    start_y = (height - total_height) // 2
-    
-    text_color = 'white' if style in ['modern', 'professional'] else '#222222'
-    
-    for i, line in enumerate(lines):
-        bbox = draw.textbbox((0, 0), line, font=font)
-        line_width = bbox[2] - bbox[0]
-        x = (width - line_width) // 2
-        y = start_y + i * 60
-        draw.text((x, y), line, font=font, fill=text_color)
-    
-    return img
-
-def create_sales_page_image(headline, subheadline, cta_text):
-    """상세페이지 헤더 이미지 생성"""
-    width, height = 1200, 800
-    img = Image.new('RGBA', (width, height), color='white')
+    # 이미지 생성
+    img = Image.new('RGB', (width, height), s["bg_colors"][0])
     draw = ImageDraw.Draw(img)
     
     # 그라데이션 배경
     for i in range(height):
-        r = int(30 + 10 * i / height)
-        g = int(30 + 10 * i / height)
-        b = int(45 + 15 * i / height)
+        ratio = i / height
+        r = int(s["bg_colors"][0][0] + (s["bg_colors"][1][0] - s["bg_colors"][0][0]) * ratio)
+        g = int(s["bg_colors"][0][1] + (s["bg_colors"][1][1] - s["bg_colors"][0][1]) * ratio)
+        b = int(s["bg_colors"][0][2] + (s["bg_colors"][1][2] - s["bg_colors"][0][2]) * ratio)
         draw.line([(0, i), (width, i)], fill=(r, g, b))
     
-    # 악센트 도형
-    draw.ellipse([(width-300, -100), (width+100, 300)], fill=(102, 126, 234, 50))
-    draw.ellipse([(-100, height-200), (200, height+100)], fill=(118, 75, 162, 50))
+    # 장식 요소 - 상단 악센트 라인
+    draw.rectangle([(60, 120), (width - 60, 125)], fill=s["accent"])
     
-    try:
-        title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 56)
-        sub_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 28)
-        cta_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
-    except:
-        title_font = sub_font = cta_font = ImageFont.load_default()
+    # 장식 요소 - 기하학적 도형
+    if style in ["premium_dark", "professional_navy"]:
+        # 우측 상단 원
+        for i in range(3):
+            offset = i * 30
+            alpha_color = tuple(max(0, min(255, c - 50 + i * 20)) for c in s["accent"])
+            draw.ellipse([(width - 200 + offset, 180 + offset), (width - 80 + offset, 300 + offset)], 
+                        outline=alpha_color, width=2)
     
-    # 헤드라인
-    y_pos = 200
-    for line in headline.split('\n')[:2]:
+    # 제목 텍스트 - 여러 줄 처리
+    title_lines = []
+    current_line = ""
+    for char in title:
+        test_line = current_line + char
+        bbox = draw.textbbox((0, 0), test_line, font=title_font)
+        if bbox[2] - bbox[0] < width - 120:
+            current_line = test_line
+        else:
+            if current_line:
+                title_lines.append(current_line)
+            current_line = char
+    if current_line:
+        title_lines.append(current_line)
+    
+    # 제목 그리기 (중앙 배치)
+    title_y = 450
+    line_height = 95
+    
+    for i, line in enumerate(title_lines[:3]):  # 최대 3줄
         bbox = draw.textbbox((0, 0), line, font=title_font)
-        x = (width - (bbox[2] - bbox[0])) // 2
-        draw.text((x, y_pos), line, font=title_font, fill='white')
-        y_pos += 70
+        line_width = bbox[2] - bbox[0]
+        x = (width - line_width) // 2
+        y = title_y + (i * line_height)
+        
+        # 그림자 효과
+        shadow_offset = 3
+        draw.text((x + shadow_offset, y + shadow_offset), line, font=title_font, 
+                  fill=(0, 0, 0))
+        draw.text((x, y), line, font=title_font, fill=s["text_color"])
     
-    # 서브헤드라인
-    y_pos += 30
-    bbox = draw.textbbox((0, 0), subheadline, font=sub_font)
-    x = (width - (bbox[2] - bbox[0])) // 2
-    draw.text((x, y_pos), subheadline, font=sub_font, fill=(170, 170, 170))
+    # 부제목
+    if subtitle:
+        subtitle_y = title_y + len(title_lines) * line_height + 50
+        bbox = draw.textbbox((0, 0), subtitle, font=subtitle_font)
+        sub_width = bbox[2] - bbox[0]
+        sub_x = (width - sub_width) // 2
+        draw.text((sub_x, subtitle_y), subtitle, font=subtitle_font, fill=s["sub_color"])
     
-    # CTA 버튼
-    btn_width, btn_height = 300, 60
-    btn_x = (width - btn_width) // 2
-    btn_y = height - 150
+    # 하단 악센트 라인
+    draw.rectangle([(60, height - 150), (width - 60, height - 145)], fill=s["accent"])
     
-    # 버튼 배경
-    draw.rounded_rectangle(
-        [(btn_x, btn_y), (btn_x + btn_width, btn_y + btn_height)],
-        radius=30,
-        fill=(102, 126, 234)
-    )
-    
-    # 버튼 텍스트
-    bbox = draw.textbbox((0, 0), cta_text, font=cta_font)
-    text_x = btn_x + (btn_width - (bbox[2] - bbox[0])) // 2
-    text_y = btn_y + (btn_height - (bbox[3] - bbox[1])) // 2
-    draw.text((text_x, text_y), cta_text, font=cta_font, fill='white')
+    # 저자 영역 (선택사항)
+    author_text = "CASHMAKER"
+    bbox = draw.textbbox((0, 0), author_text, font=author_font)
+    author_width = bbox[2] - bbox[0]
+    draw.text(((width - author_width) // 2, height - 100), author_text, 
+              font=author_font, fill=s["sub_color"])
     
     return img
+
+
+def create_thumbnail(title, style="modern"):
+    """크몽 썸네일 이미지 생성 (800x600)"""
+    width, height = 800, 600
+    
+    # 폰트 로드
+    title_font = get_korean_font(52, "Black")
+    sub_font = get_korean_font(24, "Medium")
+    
+    styles = {
+        "modern": {
+            "bg_colors": [(102, 126, 234), (118, 75, 162)],
+            "text_color": (255, 255, 255),
+            "accent": (255, 215, 0),
+        },
+        "professional": {
+            "bg_colors": [(25, 25, 35), (45, 45, 65)],
+            "text_color": (255, 255, 255),
+            "accent": (0, 200, 150),
+        },
+        "energetic": {
+            "bg_colors": [(255, 100, 100), (255, 150, 50)],
+            "text_color": (255, 255, 255),
+            "accent": (255, 255, 255),
+        },
+        "clean": {
+            "bg_colors": [(255, 255, 255), (245, 245, 250)],
+            "text_color": (30, 30, 30),
+            "accent": (102, 126, 234),
+        },
+        "luxury": {
+            "bg_colors": [(20, 20, 30), (40, 40, 60)],
+            "text_color": (255, 215, 0),
+            "accent": (255, 215, 0),
+        },
+    }
+    
+    s = styles.get(style, styles["modern"])
+    
+    img = Image.new('RGB', (width, height), s["bg_colors"][0])
+    draw = ImageDraw.Draw(img)
+    
+    # 그라데이션
+    for i in range(height):
+        ratio = i / height
+        r = int(s["bg_colors"][0][0] + (s["bg_colors"][1][0] - s["bg_colors"][0][0]) * ratio)
+        g = int(s["bg_colors"][0][1] + (s["bg_colors"][1][1] - s["bg_colors"][0][1]) * ratio)
+        b = int(s["bg_colors"][0][2] + (s["bg_colors"][1][2] - s["bg_colors"][0][2]) * ratio)
+        draw.line([(0, i), (width, i)], fill=(r, g, b))
+    
+    # 악센트 라인 (상단)
+    draw.rectangle([(0, 0), (width, 8)], fill=s["accent"])
+    
+    # 제목 줄바꿈 처리
+    title_lines = []
+    current_line = ""
+    for char in title:
+        test_line = current_line + char
+        bbox = draw.textbbox((0, 0), test_line, font=title_font)
+        if bbox[2] - bbox[0] < width - 100:
+            current_line = test_line
+        else:
+            if current_line:
+                title_lines.append(current_line)
+            current_line = char
+    if current_line:
+        title_lines.append(current_line)
+    
+    # 제목 중앙 배치
+    line_height = 70
+    total_height = len(title_lines) * line_height
+    start_y = (height - total_height) // 2
+    
+    for i, line in enumerate(title_lines[:2]):  # 최대 2줄
+        bbox = draw.textbbox((0, 0), line, font=title_font)
+        line_width = bbox[2] - bbox[0]
+        x = (width - line_width) // 2
+        y = start_y + i * line_height
+        
+        # 그림자
+        draw.text((x + 2, y + 2), line, font=title_font, fill=(0, 0, 0, 100))
+        draw.text((x, y), line, font=title_font, fill=s["text_color"])
+    
+    # 하단 악센트
+    draw.rectangle([(0, height - 8), (width, height)], fill=s["accent"])
+    
+    return img
+
+
+def create_sales_page_header(headline, subheadline, cta_text, style="dark"):
+    """상세페이지 헤더 이미지 생성 (1200x628 - 소셜 최적화)"""
+    width, height = 1200, 628
+    
+    # 폰트 로드
+    headline_font = get_korean_font(56, "Black")
+    sub_font = get_korean_font(26, "Regular")
+    cta_font = get_korean_font(22, "Bold")
+    
+    styles = {
+        "dark": {
+            "bg_colors": [(20, 20, 35), (40, 40, 70)],
+            "text_color": (255, 255, 255),
+            "sub_color": (180, 180, 200),
+            "cta_bg": (102, 126, 234),
+            "cta_text": (255, 255, 255),
+        },
+        "gradient": {
+            "bg_colors": [(102, 126, 234), (118, 75, 162)],
+            "text_color": (255, 255, 255),
+            "sub_color": (220, 220, 255),
+            "cta_bg": (255, 255, 255),
+            "cta_text": (102, 126, 234),
+        },
+        "light": {
+            "bg_colors": [(255, 255, 255), (245, 245, 250)],
+            "text_color": (30, 30, 30),
+            "sub_color": (100, 100, 100),
+            "cta_bg": (30, 30, 30),
+            "cta_text": (255, 255, 255),
+        },
+    }
+    
+    s = styles.get(style, styles["dark"])
+    
+    img = Image.new('RGB', (width, height), s["bg_colors"][0])
+    draw = ImageDraw.Draw(img)
+    
+    # 그라데이션
+    for i in range(height):
+        ratio = i / height
+        r = int(s["bg_colors"][0][0] + (s["bg_colors"][1][0] - s["bg_colors"][0][0]) * ratio)
+        g = int(s["bg_colors"][0][1] + (s["bg_colors"][1][1] - s["bg_colors"][0][1]) * ratio)
+        b = int(s["bg_colors"][0][2] + (s["bg_colors"][1][2] - s["bg_colors"][0][2]) * ratio)
+        draw.line([(0, i), (width, i)], fill=(r, g, b))
+    
+    # 장식 원
+    if style == "dark":
+        draw.ellipse([(width - 250, -80), (width + 50, 220)], 
+                     fill=(102, 126, 234, 30), outline=(102, 126, 234, 50))
+        draw.ellipse([(-100, height - 200), (200, height + 100)], 
+                     fill=(118, 75, 162, 30), outline=(118, 75, 162, 50))
+    
+    # 헤드라인 줄바꿈
+    headline_lines = []
+    current_line = ""
+    for char in headline:
+        test_line = current_line + char
+        bbox = draw.textbbox((0, 0), test_line, font=headline_font)
+        if bbox[2] - bbox[0] < width - 150:
+            current_line = test_line
+        else:
+            if current_line:
+                headline_lines.append(current_line)
+            current_line = char
+    if current_line:
+        headline_lines.append(current_line)
+    
+    # 헤드라인 그리기
+    y_pos = 150
+    line_height = 75
+    
+    for i, line in enumerate(headline_lines[:2]):
+        bbox = draw.textbbox((0, 0), line, font=headline_font)
+        line_width = bbox[2] - bbox[0]
+        x = (width - line_width) // 2
+        
+        # 그림자
+        draw.text((x + 3, y_pos + 3), line, font=headline_font, fill=(0, 0, 0))
+        draw.text((x, y_pos), line, font=headline_font, fill=s["text_color"])
+        y_pos += line_height
+    
+    # 서브헤드라인
+    if subheadline:
+        y_pos += 30
+        bbox = draw.textbbox((0, 0), subheadline, font=sub_font)
+        sub_width = bbox[2] - bbox[0]
+        draw.text(((width - sub_width) // 2, y_pos), subheadline, 
+                  font=sub_font, fill=s["sub_color"])
+    
+    # CTA 버튼
+    if cta_text:
+        btn_width, btn_height = 320, 60
+        btn_x = (width - btn_width) // 2
+        btn_y = height - 120
+        
+        # 버튼 배경 (둥근 모서리)
+        draw.rounded_rectangle(
+            [(btn_x, btn_y), (btn_x + btn_width, btn_y + btn_height)],
+            radius=30,
+            fill=s["cta_bg"]
+        )
+        
+        # 버튼 텍스트
+        bbox = draw.textbbox((0, 0), cta_text, font=cta_font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        text_x = btn_x + (btn_width - text_width) // 2
+        text_y = btn_y + (btn_height - text_height) // 2 - 3
+        draw.text((text_x, text_y), cta_text, font=cta_font, fill=s["cta_text"])
+    
+    return img
+
+
+def create_benefit_card(title, benefits, style="dark"):
+    """혜택 카드 이미지 생성"""
+    width, height = 800, 1000
+    
+    title_font = get_korean_font(42, "Bold")
+    benefit_font = get_korean_font(26, "Regular")
+    icon_font = get_korean_font(32, "Bold")
+    
+    if style == "dark":
+        bg_color = (25, 25, 40)
+        text_color = (255, 255, 255)
+        accent = (102, 126, 234)
+    else:
+        bg_color = (255, 255, 255)
+        text_color = (30, 30, 30)
+        accent = (102, 126, 234)
+    
+    img = Image.new('RGB', (width, height), bg_color)
+    draw = ImageDraw.Draw(img)
+    
+    # 상단 악센트
+    draw.rectangle([(0, 0), (width, 6)], fill=accent)
+    
+    # 제목
+    bbox = draw.textbbox((0, 0), title, font=title_font)
+    title_width = bbox[2] - bbox[0]
+    draw.text(((width - title_width) // 2, 60), title, font=title_font, fill=text_color)
+    
+    # 구분선
+    draw.rectangle([(100, 140), (width - 100, 142)], fill=accent)
+    
+    # 혜택 리스트
+    y_pos = 200
+    for i, benefit in enumerate(benefits[:6]):
+        # 체크 아이콘
+        draw.text((60, y_pos), "✓", font=icon_font, fill=accent)
+        
+        # 혜택 텍스트
+        draw.text((110, y_pos + 5), benefit, font=benefit_font, fill=text_color)
+        y_pos += 80
+    
+    # 하단 악센트
+    draw.rectangle([(0, height - 6), (width, height)], fill=accent)
+    
+    return img
+
 
 # --- 메인 UI ---
 st.markdown("""
@@ -646,45 +856,18 @@ with tabs[1]:
 
 다음을 분석해주세요:
 
-1. **경쟁 현황** (크몽, 탈잉, 클래스101 등에서 비슷한 전자책/강의)
-   - 주요 경쟁자 3개와 그들의 강점/약점
-   - 평균 가격대
-   - 베스트셀러의 공통점
+1. **경쟁 현황** - 주요 경쟁자 3개와 강점/약점, 평균 가격대
+2. **타겟 고객 심층 분석** - 표면적/본질적 페인포인트, 구매 트리거
+3. **차별화 기회** - 블루오션 포지셔닝
+4. **키워드** - 타겟이 검색할 키워드 10개
 
-2. **타겟 고객 심층 분석**
-   - 진짜 페인포인트 (표면적 vs 본질적)
-   - 구매를 망설이는 이유
-   - 구매를 결정하는 트리거
-
-3. **차별화 기회**
-   - 경쟁자들이 놓치고 있는 것
-   - 블루오션 포지셔닝 전략
-   - 내가 가진 독특한 강점
-
-4. **키워드 & 수요**
-   - 타겟이 검색할 키워드 10개
-   - 트렌드 상승/하락 예측
-   - SNS에서 핫한 관련 주제
-
-JSON 형식으로 답변:
+JSON 형식:
 {{
-    "competitors": [
-        {{"name": "경쟁자", "price": "가격", "strength": "강점", "weakness": "약점"}}
-    ],
+    "competitors": [{{"name": "경쟁자", "price": "가격", "strength": "강점", "weakness": "약점"}}],
     "avg_price": "평균가격",
-    "target_analysis": {{
-        "surface_pain": ["표면적 고민"],
-        "deep_pain": ["본질적 고민"],
-        "objections": ["구매 망설이는 이유"],
-        "triggers": ["구매 트리거"]
-    }},
-    "differentiation": {{
-        "gaps": ["경쟁자가 놓친 것"],
-        "positioning": "포지셔닝 전략",
-        "unique_angle": "독특한 각도"
-    }},
+    "target_analysis": {{"surface_pain": ["표면적 고민"], "deep_pain": ["본질적 고민"], "triggers": ["구매 트리거"]}},
+    "differentiation": {{"positioning": "포지셔닝 전략", "unique_angle": "독특한 각도"}},
     "keywords": ["키워드1", "키워드2"],
-    "trend": "상승/유지/하락",
     "summary": "요약"
 }}"""
                     result = ask_ai("시장 분석 전문가", prompt, 0.5)
@@ -708,26 +891,17 @@ JSON 형식으로 답변:
                             <br>❌ {comp.get('weakness', '')}
                         </div>
                         """, unsafe_allow_html=True)
-                    
-                    st.markdown(f"**평균 가격대:** {data.get('avg_price', 'N/A')}")
         
         with col2:
             if st.session_state.get('market_analysis'):
                 data = st.session_state['market_analysis']
                 
                 st.markdown("#### 🎯 타겟 심층 분석")
-                
                 if 'target_analysis' in data:
                     ta = data['target_analysis']
-                    
-                    st.markdown("**표면적 고민:**")
-                    for pain in ta.get('surface_pain', []):
-                        st.markdown(f"- {pain}")
-                    
-                    st.markdown("**본질적 고민 (진짜 원하는 것):**")
+                    st.markdown("**본질적 고민:**")
                     for pain in ta.get('deep_pain', []):
                         st.markdown(f"- 💎 {pain}")
-                    
                     st.markdown("**구매 트리거:**")
                     for trigger in ta.get('triggers', []):
                         st.markdown(f"- 🎯 {trigger}")
@@ -736,9 +910,8 @@ JSON 형식으로 답변:
                 if 'differentiation' in data:
                     diff = data['differentiation']
                     st.success(f"**포지셔닝:** {diff.get('positioning', '')}")
-                    st.info(f"**독특한 각도:** {diff.get('unique_angle', '')}")
                 
-                st.markdown("#### 🔑 타겟 키워드")
+                st.markdown("#### 🔑 키워드")
                 keywords = data.get('keywords', [])
                 if keywords:
                     st.markdown(" | ".join([f"`{kw}`" for kw in keywords[:10]]))
@@ -750,151 +923,62 @@ with tabs[2]:
     if not st.session_state['topic']:
         st.warning("먼저 '주제 선정' 탭에서 주제를 입력해주세요.")
     else:
-        col1, col2 = st.columns([1, 1])
-        
-        with col1:
-            st.markdown("### 가격 & 오퍼 설계")
-            
-            if st.button("💵 매출 전략 생성", key="pricing_btn"):
-                with st.spinner("수익화 전략 설계 중..."):
-                    market_data = st.session_state.get('market_analysis', {})
-                    avg_price = market_data.get('avg_price', '미정')
-                    
-                    prompt = f"""'{st.session_state['topic']}' 전자책의 매출 극대화 전략을 설계해주세요.
+        if st.button("💵 매출 전략 생성", key="pricing_btn"):
+            with st.spinner("수익화 전략 설계 중..."):
+                prompt = f"""'{st.session_state['topic']}' 전자책의 매출 극대화 전략을 설계해주세요.
 
 타겟: {st.session_state['target_persona']}
-경쟁 평균가: {avg_price}
 
-다음을 설계해주세요:
-
-1. **가격 전략**
-   - 추천 가격 (근거 포함)
-   - 가격 앵커링 전략
-   - 얼리버드/정가/프리미엄 3단계
-
-2. **오퍼 구조** (구매 저항 제거)
-   - 메인 상품 구성
-   - 보너스 3개 (가치 극대화)
-   - 보증/환불 정책
-   - 긴급성/희소성 요소
-
-3. **업셀 퍼널**
-   - 프론트엔드 (진입 상품)
-   - 미들엔드 (메인 상품)
-   - 백엔드 (고가 상품)
-   - 각 단계별 가격과 구성
-
-4. **예상 매출 시뮬레이션**
-   - 월 100명 방문 시 예상 매출
-   - 전환율 가정과 근거
+다음을 설계:
+1. 가격 전략 (얼리버드/정가/프리미엄)
+2. 오퍼 구조 (메인 상품 + 보너스 3개 + 보증)
+3. 업셀 퍼널 (프론트/미들/백엔드)
+4. 월 100명 방문 시 예상 매출
 
 JSON 형식:
 {{
-    "pricing": {{
-        "recommended": "추천가격",
-        "reason": "근거",
-        "earlybird": "얼리버드가",
-        "regular": "정가",
-        "premium": "프리미엄가"
-    }},
-    "offer": {{
-        "main_product": "메인 상품 설명",
-        "bonuses": ["보너스1", "보너스2", "보너스3"],
-        "guarantee": "보증 정책",
-        "urgency": "긴급성 요소",
-        "scarcity": "희소성 요소"
-    }},
-    "funnel": {{
-        "frontend": {{"name": "이름", "price": "가격", "desc": "설명"}},
-        "middleend": {{"name": "이름", "price": "가격", "desc": "설명"}},
-        "backend": {{"name": "이름", "price": "가격", "desc": "설명"}}
-    }},
-    "simulation": {{
-        "visitors": 100,
-        "conversion_rate": "3%",
-        "avg_order_value": "금액",
-        "monthly_revenue": "예상 월매출"
-    }}
+    "pricing": {{"recommended": "추천가", "reason": "근거", "earlybird": "얼리버드", "regular": "정가", "premium": "프리미엄"}},
+    "offer": {{"main_product": "메인", "bonuses": ["보너스1", "보너스2", "보너스3"], "guarantee": "보증"}},
+    "funnel": {{"frontend": {{"name": "이름", "price": "가격"}}, "middleend": {{"name": "이름", "price": "가격"}}, "backend": {{"name": "이름", "price": "가격"}}}},
+    "simulation": {{"monthly_revenue": "예상 월매출", "conversion_rate": "3%"}}
 }}"""
-                    result = ask_ai("수익화 전략가", prompt, 0.6)
-                    try:
-                        json_match = re.search(r'\{[\s\S]*\}', result)
-                        if json_match:
-                            st.session_state['pricing_strategy'] = json.loads(json_match.group())
-                    except:
-                        st.session_state['pricing_strategy'] = {"raw": result}
+                result = ask_ai("수익화 전략가", prompt, 0.6)
+                try:
+                    json_match = re.search(r'\{[\s\S]*\}', result)
+                    if json_match:
+                        st.session_state['pricing_strategy'] = json.loads(json_match.group())
+                except:
+                    st.session_state['pricing_strategy'] = {"raw": result}
+        
+        if st.session_state.get('pricing_strategy'):
+            data = st.session_state['pricing_strategy']
             
-            if st.session_state.get('pricing_strategy'):
-                data = st.session_state['pricing_strategy']
-                
+            col1, col2 = st.columns(2)
+            
+            with col1:
                 if 'pricing' in data:
                     pricing = data['pricing']
                     st.markdown("#### 💵 가격 전략")
-                    
                     cols = st.columns(3)
                     with cols[0]:
-                        st.markdown(f"""
-                        <div class="metric-card">
-                            <div style="font-size: 12px; color: #888;">얼리버드</div>
-                            <div class="metric-value" style="color: #2d5a27;">{pricing.get('earlybird', '')}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        st.metric("얼리버드", pricing.get('earlybird', ''))
                     with cols[1]:
-                        st.markdown(f"""
-                        <div class="metric-card" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
-                            <div style="font-size: 12px; opacity: 0.8;">추천가</div>
-                            <div style="font-size: 28px; font-weight: 700;">{pricing.get('recommended', '')}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        st.metric("추천가", pricing.get('recommended', ''))
                     with cols[2]:
-                        st.markdown(f"""
-                        <div class="metric-card">
-                            <div style="font-size: 12px; color: #888;">프리미엄</div>
-                            <div class="metric-value">{pricing.get('premium', '')}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
+                        st.metric("프리미엄", pricing.get('premium', ''))
                     st.info(f"💡 {pricing.get('reason', '')}")
-        
-        with col2:
-            if st.session_state.get('pricing_strategy'):
-                data = st.session_state['pricing_strategy']
-                
-                st.markdown("#### 🎁 오퍼 구성")
+            
+            with col2:
                 if 'offer' in data:
                     offer = data['offer']
-                    st.markdown(f"**메인 상품:** {offer.get('main_product', '')}")
-                    
-                    st.markdown("**보너스:**")
+                    st.markdown("#### 🎁 오퍼 구성")
                     for i, bonus in enumerate(offer.get('bonuses', []), 1):
                         st.markdown(f"🎁 보너스 {i}: {bonus}")
-                    
                     st.success(f"✅ 보증: {offer.get('guarantee', '')}")
-                    st.warning(f"⏰ 긴급성: {offer.get('urgency', '')}")
-                
-                st.markdown("#### 📈 퍼널 구조")
-                if 'funnel' in data:
-                    funnel = data['funnel']
-                    for stage, info in funnel.items():
-                        if isinstance(info, dict):
-                            label = {"frontend": "프론트엔드", "middleend": "미들엔드", "backend": "백엔드"}.get(stage, stage)
-                            st.markdown(f"""
-                            <div class="funnel-step">
-                                <strong>{label}</strong>: {info.get('name', '')} - {info.get('price', '')}
-                                <br><small>{info.get('desc', '')}</small>
-                            </div>
-                            """, unsafe_allow_html=True)
                 
                 if 'simulation' in data:
                     sim = data['simulation']
-                    st.markdown("#### 💰 예상 매출")
-                    st.markdown(f"""
-                    <div class="metric-card" style="background: #f0fff0;">
-                        <div class="metric-label">월 100명 방문 시</div>
-                        <div class="metric-value" style="color: #2d5a27;">{sim.get('monthly_revenue', '')}</div>
-                        <div style="font-size: 12px; color: #666;">전환율 {sim.get('conversion_rate', '')} 기준</div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown(f"#### 💰 예상 월매출: **{sim.get('monthly_revenue', '')}**")
 
 # === TAB 4: 목차 & 본문 ===
 with tabs[3]:
@@ -907,30 +991,19 @@ with tabs[3]:
         
         with col1:
             st.markdown("### 제목 생성")
-            
-            title_input = st.text_input("전자책 제목", value=st.session_state['book_title'], placeholder="제목 입력")
+            title_input = st.text_input("전자책 제목", value=st.session_state['book_title'])
             st.session_state['book_title'] = title_input
             
-            subtitle_input = st.text_input("부제목", value=st.session_state['subtitle'], placeholder="부제목 입력")
+            subtitle_input = st.text_input("부제목", value=st.session_state['subtitle'])
             st.session_state['subtitle'] = subtitle_input
             
             if st.button("✨ AI 제목 추천", key="title_gen"):
                 with st.spinner("베스트셀러급 제목 생성 중..."):
                     prompt = f"""'{st.session_state['topic']}' 주제의 전자책 제목 5개를 만들어주세요.
-
 타겟: {st.session_state['target_persona']}
 
-[베스트셀러 제목 원칙]
-- 7자 이내 임팩트
-- 상식 파괴 or 구체적 숫자
-- "역행자", "부의 추월차선" 수준
-
 JSON 형식:
-{{
-    "titles": [
-        {{"title": "제목", "subtitle": "부제목", "reason": "이유"}}
-    ]
-}}"""
+{{"titles": [{{"title": "제목", "subtitle": "부제목", "reason": "이유"}}]}}"""
                     result = ask_ai("베스트셀러 작가", prompt, 0.9)
                     try:
                         json_match = re.search(r'\{[\s\S]*\}', result)
@@ -941,13 +1014,7 @@ JSON 형식:
             
             if st.session_state.get('generated_titles'):
                 for t in st.session_state['generated_titles'].get('titles', [])[:5]:
-                    st.markdown(f"""
-                    <div class="info-card">
-                        <strong>{t.get('title', '')}</strong><br>
-                        <small>{t.get('subtitle', '')}</small><br>
-                        <span style="color: #888; font-size: 12px;">{t.get('reason', '')}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown(f"**{t.get('title', '')}** - {t.get('subtitle', '')}")
         
         with col2:
             st.markdown("### 목차 생성")
@@ -955,43 +1022,27 @@ JSON 형식:
             if st.button("📋 AI 목차 생성", key="outline_gen"):
                 with st.spinner("목차 설계 중..."):
                     prompt = f"""'{st.session_state['topic']}' 주제로 6~7개 챕터 목차를 설계해주세요.
-
 타겟: {st.session_state['target_persona']}
-타겟 고민: {st.session_state['pain_points']}
-
-[챕터 제목 규칙]
-- 호기심 자극: "왜 ~할까?"
-- 도발적: "~는 거짓말이다"
-- 구체적 숫자/스토리
-
-[감정선 흐름]
-1. 공감 → 2. 문제 제기 → 3. 반전 → 4. 깨달음 → 5. 실전 → 6. 마인드셋 → 7. 비전
 
 형식:
 ## 챕터1: [제목]
 - 소제목1
 - 소제목2
-- 소제목3
-
-(6~7개 챕터)"""
+- 소제목3"""
                     result = ask_ai("출판기획자", prompt, 0.85)
-                    
                     chapters = re.findall(r'## (챕터\d+:?\s*.+)', result)
                     if not chapters:
                         chapters = [line.strip() for line in result.split('\n') if '챕터' in line][:7]
-                    
                     st.session_state['outline'] = chapters
                     st.session_state['full_outline'] = result
             
             if st.session_state.get('full_outline'):
                 st.text_area("전체 목차", value=st.session_state['full_outline'], height=400)
-                
-                if st.session_state['outline']:
-                    st.success(f"✅ {len(st.session_state['outline'])}개 챕터 생성됨")
 
 # === TAB 5: 디자인 생성 ===
 with tabs[4]:
-    st.markdown("## 🎨 디자인 자동 생성")
+    st.markdown("## 🎨 프리미엄 디자인 생성")
+    st.info("📌 한글 폰트를 로딩합니다. 첫 생성 시 10~20초 정도 걸릴 수 있습니다.")
     
     col1, col2 = st.columns([1, 1])
     
@@ -1000,79 +1051,84 @@ with tabs[4]:
         
         cover_title = st.text_input("표지 제목", value=st.session_state.get('book_title', ''), key="cover_title")
         cover_subtitle = st.text_input("표지 부제목", value=st.session_state.get('subtitle', ''), key="cover_subtitle")
-        cover_style = st.selectbox("표지 스타일", ["gradient", "dark", "warm"], format_func=lambda x: {"gradient": "그라데이션 (보라)", "dark": "다크 모드", "warm": "따뜻한 톤"}.get(x, x))
+        cover_style = st.selectbox(
+            "표지 스타일", 
+            ["premium_dark", "modern_gradient", "elegant_white", "bold_red", "professional_navy"],
+            format_func=lambda x: {
+                "premium_dark": "🖤 프리미엄 다크 (골드 악센트)",
+                "modern_gradient": "💜 모던 그라데이션",
+                "elegant_white": "🤍 엘레강트 화이트",
+                "bold_red": "❤️ 볼드 레드",
+                "professional_navy": "💙 프로페셔널 네이비"
+            }.get(x, x)
+        )
         
         if st.button("🎨 표지 생성", key="gen_cover"):
             if cover_title:
-                cover_img = create_book_cover(cover_title, cover_subtitle, cover_style)
-                st.session_state['cover_image'] = cover_img
-                st.success("표지 생성 완료!")
+                with st.spinner("프리미엄 표지 생성 중..."):
+                    cover_img = create_book_cover(cover_title, cover_subtitle, cover_style)
+                    st.session_state['cover_image'] = cover_img
+                    st.success("표지 생성 완료!")
         
         if st.session_state.get('cover_image'):
-            st.image(st.session_state['cover_image'], caption="전자책 표지", use_container_width=True)
-            
-            # 다운로드
+            st.image(st.session_state['cover_image'], caption="전자책 표지 (800x1200)", use_container_width=True)
             buf = BytesIO()
             st.session_state['cover_image'].save(buf, format='PNG')
-            st.download_button(
-                "📥 표지 다운로드 (PNG)",
-                buf.getvalue(),
-                file_name="book_cover.png",
-                mime="image/png"
-            )
+            st.download_button("📥 표지 다운로드", buf.getvalue(), file_name="book_cover.png", mime="image/png")
     
     with col2:
         st.markdown("### 🖼️ 크몽 썸네일")
         
-        thumb_title = st.text_input("썸네일 문구", value=st.session_state.get('book_title', ''), key="thumb_title", placeholder="짧고 임팩트 있게")
-        thumb_style = st.selectbox("썸네일 스타일", ["modern", "professional", "bright"], format_func=lambda x: {"modern": "모던 (그라데이션)", "professional": "프로페셔널 (다크)", "bright": "밝은 톤"}.get(x, x))
+        thumb_title = st.text_input("썸네일 문구", value=st.session_state.get('book_title', ''), key="thumb_title")
+        thumb_style = st.selectbox(
+            "썸네일 스타일", 
+            ["modern", "professional", "energetic", "clean", "luxury"],
+            format_func=lambda x: {
+                "modern": "💜 모던 그라데이션",
+                "professional": "🖤 프로페셔널 다크",
+                "energetic": "🧡 에너제틱 오렌지",
+                "clean": "🤍 클린 화이트",
+                "luxury": "✨ 럭셔리 골드"
+            }.get(x, x)
+        )
         
         if st.button("🎨 썸네일 생성", key="gen_thumb"):
             if thumb_title:
-                thumb_img = create_thumbnail(thumb_title, thumb_style)
-                st.session_state['thumbnail_image'] = thumb_img
-                st.success("썸네일 생성 완료!")
+                with st.spinner("썸네일 생성 중..."):
+                    thumb_img = create_thumbnail(thumb_title, thumb_style)
+                    st.session_state['thumbnail_image'] = thumb_img
+                    st.success("썸네일 생성 완료!")
         
         if st.session_state.get('thumbnail_image'):
             st.image(st.session_state['thumbnail_image'], caption="크몽 썸네일 (800x600)", use_container_width=True)
-            
             buf = BytesIO()
             st.session_state['thumbnail_image'].save(buf, format='PNG')
-            st.download_button(
-                "📥 썸네일 다운로드 (PNG)",
-                buf.getvalue(),
-                file_name="kmong_thumbnail.png",
-                mime="image/png"
-            )
+            st.download_button("📥 썸네일 다운로드", buf.getvalue(), file_name="thumbnail.png", mime="image/png")
     
     st.markdown("---")
-    st.markdown("### 📄 상세페이지 헤더 이미지")
+    st.markdown("### 📄 상세페이지 헤더")
     
     col3, col4 = st.columns([1, 1])
     
     with col3:
         sales_headline = st.text_input("헤드라인", placeholder="월급만 믿다가는 평생 가난하다")
         sales_subheadline = st.text_input("서브헤드라인", placeholder="31개월 만에 10억 만든 비밀")
-        sales_cta = st.text_input("CTA 버튼 문구", value="지금 바로 시작하기")
+        sales_cta = st.text_input("CTA 버튼", value="지금 바로 시작하기")
+        header_style = st.selectbox("스타일", ["dark", "gradient", "light"])
         
-        if st.button("🎨 상세페이지 헤더 생성", key="gen_sales_img"):
+        if st.button("🎨 헤더 생성", key="gen_header"):
             if sales_headline:
-                sales_img = create_sales_page_image(sales_headline, sales_subheadline, sales_cta)
-                st.session_state['sales_header_image'] = sales_img
-                st.success("상세페이지 헤더 생성 완료!")
+                with st.spinner("상세페이지 헤더 생성 중..."):
+                    header_img = create_sales_page_header(sales_headline, sales_subheadline, sales_cta, header_style)
+                    st.session_state['header_image'] = header_img
+                    st.success("헤더 생성 완료!")
     
     with col4:
-        if st.session_state.get('sales_header_image'):
-            st.image(st.session_state['sales_header_image'], caption="상세페이지 헤더", use_container_width=True)
-            
+        if st.session_state.get('header_image'):
+            st.image(st.session_state['header_image'], caption="상세페이지 헤더 (1200x628)", use_container_width=True)
             buf = BytesIO()
-            st.session_state['sales_header_image'].save(buf, format='PNG')
-            st.download_button(
-                "📥 헤더 이미지 다운로드",
-                buf.getvalue(),
-                file_name="sales_header.png",
-                mime="image/png"
-            )
+            st.session_state['header_image'].save(buf, format='PNG')
+            st.download_button("📥 헤더 다운로드", buf.getvalue(), file_name="sales_header.png", mime="image/png")
 
 # === TAB 6: 판매페이지 ===
 with tabs[5]:
@@ -1083,186 +1139,82 @@ with tabs[5]:
     else:
         if st.button("✍️ 판매페이지 카피 생성", key="sales_copy_btn"):
             with st.spinner("전환율 높은 카피 작성 중..."):
-                pricing = st.session_state.get('pricing_strategy', {})
-                
                 prompt = f"""'{st.session_state['topic']}' 전자책의 크몽 상세페이지 카피를 작성해주세요.
 
 제목: {st.session_state.get('book_title', st.session_state['topic'])}
 타겟: {st.session_state['target_persona']}
-타겟 고민: {st.session_state['pain_points']}
 
-[작성할 내용]
+작성 내용:
+1. 크몽 상품 제목 (40자)
+2. 후킹 헤드라인 3개
+3. 문제 제기 (타겟 고통 자극)
+4. 해결책 제시 (핵심 가치 3가지)
+5. 오퍼 정리 (구성품 + 보너스)
+6. CTA (긴급성 문구)
+7. FAQ 3개
 
-1. **크몽 상품 제목** (40자 이내, 검색 키워드 포함)
-
-2. **후킹 헤드라인** 3개
-   - 스크롤 멈추게 만드는 한 줄
-   - 상식 파괴 or 충격적 숫자
-
-3. **문제 제기** (타겟의 고통 자극)
-   - "이런 경험 있으시죠?" 형식
-   - 구체적 상황 묘사 3가지
-
-4. **해결책 제시** (이 전자책이 답인 이유)
-   - 핵심 가치 3가지
-   - 각각 구체적 설명
-
-5. **사회적 증거** (신뢰 구축)
-   - 자격/경력 어필 포인트
-   - 후기 유도 문구
-
-6. **오퍼 정리**
-   - 구성품 나열
-   - 보너스 강조
-   - 가격 앵커링
-
-7. **CTA (구매 유도)**
-   - 긴급성 문구 3개
-   - 최종 CTA 문구
-
-8. **FAQ** 3개
-   - 예상 질문과 답변
-
-전체를 마크다운 형식으로 작성해주세요."""
-                
+마크다운 형식으로 작성."""
                 result = ask_ai("크몽 탑셀러 마케터", prompt, 0.8)
                 st.session_state['sales_page_copy'] = result
         
         if st.session_state.get('sales_page_copy'):
             st.markdown("### 📝 생성된 판매페이지 카피")
             st.markdown(st.session_state['sales_page_copy'])
-            
-            st.download_button(
-                "📥 카피 다운로드 (TXT)",
-                st.session_state['sales_page_copy'],
-                file_name="sales_page_copy.txt",
-                mime="text/plain"
-            )
+            st.download_button("📥 카피 다운로드", st.session_state['sales_page_copy'], file_name="sales_copy.txt")
 
 # === TAB 7: 리드마그넷 ===
 with tabs[6]:
     st.markdown("## 🎁 리드마그넷 생성")
-    st.markdown("무료 PDF로 잠재고객 이메일을 수집하세요")
     
     if not st.session_state['topic']:
         st.warning("먼저 '주제 선정' 탭에서 주제를 입력해주세요.")
     else:
-        col1, col2 = st.columns([1, 1])
+        lead_type = st.selectbox("리드마그넷 유형", ["체크리스트", "미니 가이드", "템플릿", "케이스 스터디"])
         
-        with col1:
-            st.markdown("### 리드마그넷 아이디어")
-            
-            lead_type = st.selectbox(
-                "리드마그넷 유형",
-                ["체크리스트", "미니 가이드", "템플릿", "케이스 스터디", "무료 챕터"]
-            )
-            
-            if st.button("💡 리드마그넷 생성", key="lead_gen"):
-                with st.spinner("리드마그넷 콘텐츠 생성 중..."):
-                    prompt = f"""'{st.session_state['topic']}' 전자책의 리드마그넷을 만들어주세요.
-
-유형: {lead_type}
+        if st.button("💡 리드마그넷 생성", key="lead_gen"):
+            with st.spinner("리드마그넷 생성 중..."):
+                prompt = f"""'{st.session_state['topic']}' 전자책의 {lead_type} 리드마그넷을 만들어주세요.
 타겟: {st.session_state['target_persona']}
-메인 상품: {st.session_state.get('book_title', st.session_state['topic'])}
 
-[리드마그넷 원칙]
-- 5분 안에 소비 가능
-- 즉각적인 가치 제공
-- 메인 상품 구매 욕구 자극
-- "이게 무료라고?" 느낌
-
-다음을 생성해주세요:
-
-1. **제목** (호기심 자극)
-2. **부제목**
-3. **목차** (5~7개 항목)
-4. **각 항목별 핵심 내용** (2~3문장씩)
-5. **마지막에 메인 상품 유도 문구**
-
-마크다운 형식으로 작성해주세요."""
-                    
-                    result = ask_ai("콘텐츠 마케터", prompt, 0.8)
-                    st.session_state['lead_magnet'] = result
+5분 안에 소비 가능하고, 메인 상품 구매 욕구를 자극하는 내용으로:
+1. 제목
+2. 목차 (5~7개)
+3. 각 항목별 핵심 내용
+4. 메인 상품 유도 문구"""
+                result = ask_ai("콘텐츠 마케터", prompt, 0.8)
+                st.session_state['lead_magnet'] = result
         
-        with col2:
-            if st.session_state.get('lead_magnet'):
-                st.markdown("### 📄 리드마그넷 콘텐츠")
-                st.markdown(st.session_state['lead_magnet'])
-                
-                st.download_button(
-                    "📥 리드마그넷 다운로드",
-                    st.session_state['lead_magnet'],
-                    file_name="lead_magnet.md",
-                    mime="text/markdown"
-                )
-                
-                st.markdown("---")
-                st.markdown("### 🔗 배포 채널 추천")
-                st.markdown("""
-                1. **블로그** - 검색 유입용 포스팅
-                2. **인스타그램** - 스토리/피드에 "DM 주시면 무료 제공"
-                3. **네이버 카페** - 관련 커뮤니티에 공유
-                4. **카카오톡 오픈채팅** - 관심사 기반 방
-                5. **유튜브 커뮤니티** - 구독자 대상
-                """)
+        if st.session_state.get('lead_magnet'):
+            st.markdown(st.session_state['lead_magnet'])
+            st.download_button("📥 리드마그넷 다운로드", st.session_state['lead_magnet'], file_name="lead_magnet.md")
 
 # === TAB 8: 이메일 퍼널 ===
 with tabs[7]:
     st.markdown("## 📧 이메일 시퀀스 설계")
-    st.markdown("리드마그넷 다운로드 후 자동 발송될 이메일 시리즈")
     
     if not st.session_state['topic']:
         st.warning("먼저 '주제 선정' 탭에서 주제를 입력해주세요.")
     else:
         if st.button("📧 이메일 시퀀스 생성", key="email_gen"):
             with st.spinner("이메일 퍼널 설계 중..."):
-                prompt = f"""'{st.session_state['topic']}' 전자책 판매를 위한 이메일 시퀀스를 만들어주세요.
+                prompt = f"""'{st.session_state['topic']}' 전자책 판매를 위한 7일 이메일 시퀀스:
 
-메인 상품: {st.session_state.get('book_title', st.session_state['topic'])}
-타겟: {st.session_state['target_persona']}
-가격: {st.session_state.get('pricing_strategy', {}).get('pricing', {}).get('recommended', '미정')}
-
-[이메일 시퀀스 구조 - 7일]
-
-Day 0: 환영 + 리드마그넷 전달
-Day 1: 가치 제공 (팁/인사이트)
-Day 2: 스토리 (내 경험담)
-Day 3: 문제 심화 (왜 해결해야 하는지)
-Day 4: 해결책 힌트 (전자책 소개)
-Day 5: 사회적 증거 (후기/결과)
-Day 6: 긴급성 + 마감 임박
+Day 0: 환영 + 리드마그넷
+Day 1: 가치 제공
+Day 2: 스토리
+Day 3: 문제 심화
+Day 4: 해결책 (전자책 소개)
+Day 5: 사회적 증거
+Day 6: 긴급성
 Day 7: 최종 마감
 
-각 이메일마다:
-- 제목 (오픈율 높이는)
-- 본문 (300자 내외)
-- CTA
-
-마크다운 형식으로 작성해주세요."""
-                
+각 이메일: 제목 + 본문(300자) + CTA"""
                 result = ask_ai("이메일 마케팅 전문가", prompt, 0.8)
                 st.session_state['email_sequence'] = result
         
         if st.session_state.get('email_sequence'):
-            st.markdown("### 📬 7일 이메일 시퀀스")
             st.markdown(st.session_state['email_sequence'])
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.download_button(
-                    "📥 이메일 시퀀스 다운로드",
-                    st.session_state['email_sequence'],
-                    file_name="email_sequence.md",
-                    mime="text/markdown"
-                )
-            
-            with col2:
-                st.markdown("### 📮 추천 발송 툴")
-                st.markdown("""
-                - **스티비** (국내, 무료 플랜 있음)
-                - **메일침프** (해외, 무료 플랜 있음)
-                - **카카오톡 채널** (국내, 친구 기반)
-                """)
+            st.download_button("📥 이메일 시퀀스 다운로드", st.session_state['email_sequence'], file_name="email_sequence.md")
 
 # === TAB 9: 최종 출력 ===
 with tabs[8]:
@@ -1276,7 +1228,7 @@ with tabs[8]:
         ("가격 전략", bool(st.session_state.get('pricing_strategy'))),
         ("제목 & 목차", bool(st.session_state.get('outline'))),
         ("표지 디자인", bool(st.session_state.get('cover_image'))),
-        ("판매페이지 카피", bool(st.session_state.get('sales_page_copy'))),
+        ("판매페이지", bool(st.session_state.get('sales_page_copy'))),
         ("리드마그넷", bool(st.session_state.get('lead_magnet'))),
         ("이메일 퍼널", bool(st.session_state.get('email_sequence'))),
     ]
@@ -1284,23 +1236,19 @@ with tabs[8]:
     cols = st.columns(4)
     for i, (name, done) in enumerate(checklist):
         with cols[i % 4]:
-            status = "✅" if done else "⬜"
-            st.markdown(f"{status} {name}")
+            st.markdown(f"{'✅' if done else '⬜'} {name}")
     
     completed = sum(1 for _, done in checklist if done)
     st.progress(completed / len(checklist))
     st.caption(f"{completed}/{len(checklist)} 완료")
     
     st.markdown("---")
-    st.markdown("### 📥 전체 다운로드")
     
     # 전체 데이터 JSON
     export_data = {
         "topic": st.session_state.get('topic', ''),
         "book_title": st.session_state.get('book_title', ''),
         "subtitle": st.session_state.get('subtitle', ''),
-        "target_persona": st.session_state.get('target_persona', ''),
-        "pain_points": st.session_state.get('pain_points', ''),
         "market_analysis": st.session_state.get('market_analysis', {}),
         "pricing_strategy": st.session_state.get('pricing_strategy', {}),
         "outline": st.session_state.get('outline', []),
@@ -1310,8 +1258,7 @@ with tabs[8]:
         "exported_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
     
-    col1, col2, col3 = st.columns(3)
-    
+    col1, col2 = st.columns(2)
     with col1:
         st.download_button(
             "📥 전체 데이터 (JSON)",
@@ -1320,65 +1267,23 @@ with tabs[8]:
             mime="application/json",
             use_container_width=True
         )
-    
     with col2:
-        # 마케팅 자료 통합
-        marketing_bundle = f"""# {st.session_state.get('book_title', '전자책')} - 마케팅 자료
+        marketing = f"""# {st.session_state.get('book_title', '전자책')}
 
-## 판매페이지 카피
-{st.session_state.get('sales_page_copy', '아직 생성되지 않음')}
-
----
+## 판매페이지
+{st.session_state.get('sales_page_copy', '')}
 
 ## 리드마그넷
-{st.session_state.get('lead_magnet', '아직 생성되지 않음')}
+{st.session_state.get('lead_magnet', '')}
 
----
-
-## 이메일 시퀀스
-{st.session_state.get('email_sequence', '아직 생성되지 않음')}
-"""
-        st.download_button(
-            "📥 마케팅 자료 (MD)",
-            marketing_bundle,
-            file_name="marketing_bundle.md",
-            mime="text/markdown",
-            use_container_width=True
-        )
-    
-    with col3:
-        if st.session_state.get('cover_image'):
-            buf = BytesIO()
-            st.session_state['cover_image'].save(buf, format='PNG')
-            st.download_button(
-                "📥 표지 이미지 (PNG)",
-                buf.getvalue(),
-                file_name="book_cover.png",
-                mime="image/png",
-                use_container_width=True
-            )
-        else:
-            st.button("표지 없음", disabled=True, use_container_width=True)
-    
-    st.markdown("---")
-    st.markdown("### 🚀 다음 단계")
-    
-    st.markdown("""
-    <div class="info-card">
-        <div class="info-card-title">크몽 등록 순서</div>
-        <p>1. 크몽 판매자 등록 (사업자/개인)</p>
-        <p>2. 전자책 PDF 완성</p>
-        <p>3. 썸네일 업로드</p>
-        <p>4. 상세페이지 카피 입력</p>
-        <p>5. 가격 설정 & 옵션 구성</p>
-        <p>6. 검수 신청 → 승인 후 판매 시작!</p>
-    </div>
-    """, unsafe_allow_html=True)
+## 이메일
+{st.session_state.get('email_sequence', '')}"""
+        st.download_button("📥 마케팅 자료 (MD)", marketing, file_name="marketing.md", use_container_width=True)
 
 # --- 푸터 ---
 st.markdown("""
-<div style="text-align: center; padding: 40px 20px; margin-top: 60px; border-top: 1px solid #eee;">
+<div style="text-align: center; padding: 40px; margin-top: 60px; border-top: 1px solid #eee;">
     <span style="color: #888;">전자책 수익화 시스템 — </span>
-    <span style="color: #222; font-weight: 600;">CASHMAKER v2.0</span>
+    <span style="font-weight: 600;">CASHMAKER v2.0</span>
 </div>
 """, unsafe_allow_html=True)
