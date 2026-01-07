@@ -6,410 +6,944 @@ from datetime import datetime
 from pathlib import Path
 
 # ==========================================
-# 🎯 페이지 설정 (반드시 첫 번째!)
+# 🎯 페이지 설정
 # ==========================================
 st.set_page_config(
-    page_title="CASHMAKER 전자책 프로그램",
+    page_title="CASHMAKER",
     page_icon="✨",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # ==========================================
-# 🎨 프리미엄 CSS (안정화 버전)
+# 🎨 ARTWORK-LEVEL PREMIUM CSS
 # ==========================================
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap');
+    /* ============================================
+       🖼️ ARTWORK-LEVEL PREMIUM DESIGN SYSTEM
+       Inspired by Apple, Designed for Emotion
+       ============================================ */
     
-    /* 애니메이션 */
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@100;200;300;400;500;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap');
+    
+    /* 🌟 Keyframe Animations */
+    @keyframes gentleFloat {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-8px); }
     }
     
-    @keyframes shimmer {
-        0% { background-position: -200% 0; }
-        100% { background-position: 200% 0; }
+    @keyframes subtleGlow {
+        0%, 100% { 
+            box-shadow: 0 0 40px rgba(212, 175, 55, 0.15),
+                        0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        50% { 
+            box-shadow: 0 0 60px rgba(212, 175, 55, 0.25),
+                        0 25px 80px rgba(0, 0, 0, 0.4);
+        }
     }
     
-    @keyframes glow {
-        0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
-        50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
+    @keyframes luxuryShimmer {
+        0% { background-position: -200% center; }
+        100% { background-position: 200% center; }
     }
     
+    @keyframes fadeInElegant {
+        0% { 
+            opacity: 0; 
+            transform: translateY(40px) scale(0.98);
+            filter: blur(10px);
+        }
+        100% { 
+            opacity: 1; 
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+        }
+    }
+    
+    @keyframes breathe {
+        0%, 100% { transform: scale(1); opacity: 0.8; }
+        50% { transform: scale(1.02); opacity: 1; }
+    }
+    
+    @keyframes borderGlow {
+        0%, 100% { border-color: rgba(212, 175, 55, 0.2); }
+        50% { border-color: rgba(212, 175, 55, 0.5); }
+    }
+    
+    @keyframes textReveal {
+        0% { 
+            opacity: 0;
+            letter-spacing: 15px;
+            filter: blur(8px);
+        }
+        100% { 
+            opacity: 1;
+            letter-spacing: 8px;
+            filter: blur(0);
+        }
+    }
+    
+    @keyframes pulseRing {
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(1.5); opacity: 0; }
+    }
+    
+    /* 🎨 Root Variables */
+    :root {
+        --gold-primary: #D4AF37;
+        --gold-light: #F4E5B2;
+        --gold-dark: #B8860B;
+        --black-deep: #0A0A0A;
+        --black-rich: #111111;
+        --black-soft: #1A1A1A;
+        --white-pure: #FFFFFF;
+        --white-soft: #F5F5F5;
+        --gray-elegant: #888888;
+        --transition-luxury: cubic-bezier(0.23, 1, 0.32, 1);
+    }
+    
+    /* 🌌 Global Reset & Base */
     * { 
-        font-family: 'Pretendard', -apple-system, sans-serif !important; 
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }
     
-    /* 다크 배경 */
+    /* 🖤 Deep Dark Canvas */
     .stApp { 
-        background: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%) !important;
+        background: 
+            radial-gradient(ellipse at 20% 0%, rgba(212, 175, 55, 0.03) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 100%, rgba(212, 175, 55, 0.02) 0%, transparent 50%),
+            radial-gradient(ellipse at 50% 50%, rgba(30, 30, 30, 1) 0%, rgba(10, 10, 10, 1) 100%),
+            var(--black-deep) !important;
+        min-height: 100vh;
     }
     
-    /* 메인 컨테이너 */
+    /* 📦 Main Container - Glass Morphism */
     .main .block-container { 
-        background: rgba(255, 255, 255, 0.02) !important;
-        border: 1px solid rgba(255, 215, 0, 0.1) !important;
-        border-radius: 24px !important;
-        padding: 2rem 3rem !important; 
-        max-width: 1400px !important;
-        animation: fadeIn 0.6s ease-out;
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.03) 0%,
+            rgba(255, 255, 255, 0.01) 100%
+        ) !important;
+        backdrop-filter: blur(40px) saturate(150%) !important;
+        -webkit-backdrop-filter: blur(40px) saturate(150%) !important;
+        border: 1px solid rgba(212, 175, 55, 0.1) !important;
+        border-radius: 32px !important;
+        padding: 4rem 5rem !important; 
+        max-width: 1500px !important;
+        margin: 2rem auto !important;
+        box-shadow: 
+            0 50px 100px -20px rgba(0, 0, 0, 0.5),
+            0 30px 60px -30px rgba(0, 0, 0, 0.6),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+        animation: fadeInElegant 1.2s var(--transition-luxury) forwards;
     }
     
-    /* 사이드바 */
+    /* 🎭 Sidebar - Luxury Panel */
     [data-testid="stSidebar"] { 
-        background: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 100%) !important;
-        border-right: 1px solid rgba(255, 215, 0, 0.15) !important;
+        background: linear-gradient(
+            180deg,
+            rgba(15, 15, 15, 0.98) 0%,
+            rgba(20, 20, 20, 0.95) 50%,
+            rgba(10, 10, 10, 0.98) 100%
+        ) !important;
+        backdrop-filter: blur(30px) !important;
+        border-right: 1px solid rgba(212, 175, 55, 0.15) !important;
+        box-shadow: 
+            4px 0 30px rgba(0, 0, 0, 0.3),
+            inset -1px 0 0 rgba(212, 175, 55, 0.1) !important;
     }
     
     [data-testid="stSidebar"] * { 
-        color: #e0e0e0 !important; 
+        color: var(--white-soft) !important; 
     }
     
-    /* 프로그레스 바 */
     [data-testid="stSidebar"] .stProgress > div > div > div > div { 
-        background: linear-gradient(90deg, #FFD700, #FFA500) !important;
-        border-radius: 10px !important; 
+        background: linear-gradient(
+            90deg, 
+            var(--gold-dark) 0%,
+            var(--gold-primary) 50%,
+            var(--gold-light) 100%
+        ) !important;
+        border-radius: 100px !important;
+        box-shadow: 
+            0 0 20px rgba(212, 175, 55, 0.5),
+            0 0 40px rgba(212, 175, 55, 0.3) !important;
     }
     
-    /* 텍스트 */
-    .stMarkdown, .stText, p, span, label, li { 
-        color: #e0e0e0 !important; 
-        line-height: 1.7 !important;
-    }
-    
-    /* 헤딩 */
+    /* ✨ Typography - Editorial Excellence */
     h1 { 
-        background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%) !important;
+        font-family: 'Playfair Display', 'Pretendard', serif !important;
+        font-size: 4rem !important;
+        font-weight: 600 !important;
+        letter-spacing: -2px !important;
+        line-height: 1.1 !important;
+        background: linear-gradient(
+            135deg,
+            var(--gold-light) 0%,
+            var(--gold-primary) 25%,
+            var(--gold-light) 50%,
+            var(--gold-primary) 75%,
+            var(--gold-light) 100%
+        ) !important;
         background-size: 200% auto !important;
         -webkit-background-clip: text !important;
         -webkit-text-fill-color: transparent !important;
         background-clip: text !important;
-        font-weight: 900 !important; 
-        font-size: 2.8rem !important;
-        animation: shimmer 3s linear infinite;
+        animation: luxuryShimmer 4s linear infinite;
+        text-shadow: 0 0 80px rgba(212, 175, 55, 0.3);
+        margin-bottom: 2rem !important;
     }
     
     h2 { 
-        color: #FFD700 !important; 
-        font-weight: 700 !important; 
-        font-size: 1.8rem !important;
-        border-bottom: 2px solid rgba(255, 215, 0, 0.3) !important;
-        padding-bottom: 0.5rem !important;
+        font-family: 'Pretendard', sans-serif !important;
+        color: var(--gold-primary) !important; 
+        font-weight: 300 !important; 
+        font-size: 2rem !important;
+        letter-spacing: -0.5px !important;
+        margin-top: 4rem !important;
+        margin-bottom: 1.5rem !important;
+        position: relative;
+        padding-bottom: 1rem;
+    }
+    
+    h2::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 60px;
+        height: 2px;
+        background: linear-gradient(90deg, var(--gold-primary), transparent);
     }
     
     h3 { 
-        color: #FFA500 !important; 
-        font-weight: 600 !important; 
+        color: rgba(212, 175, 55, 0.8) !important; 
+        font-weight: 500 !important;
+        font-size: 1.3rem !important;
+        letter-spacing: 0.5px !important;
     }
     
-    /* 탭 */
+    /* 📝 Body Text */
+    .stMarkdown, .stText, p, span, label, li { 
+        color: rgba(255, 255, 255, 0.75) !important; 
+        line-height: 1.9 !important;
+        font-weight: 300 !important;
+        letter-spacing: 0.3px !important;
+    }
+    
+    /* 📑 Tabs - Floating Capsules */
     .stTabs [data-baseweb="tab-list"] { 
         background: rgba(255, 255, 255, 0.02) !important;
-        border-radius: 12px !important;
-        padding: 8px !important;
-        gap: 4px !important;
+        border-radius: 100px !important;
+        padding: 8px 12px !important;
+        gap: 8px !important;
+        border: 1px solid rgba(212, 175, 55, 0.1) !important;
+        box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.2) !important;
     }
     
     .stTabs [data-baseweb="tab"] { 
         background: transparent !important;
-        color: #888 !important;
-        border-radius: 8px !important;
-        padding: 12px 20px !important;
+        color: rgba(255, 255, 255, 0.4) !important;
+        border-radius: 100px !important;
+        padding: 14px 28px !important;
+        font-weight: 500 !important;
+        font-size: 14px !important;
+        letter-spacing: 0.5px !important;
+        transition: all 0.5s var(--transition-luxury) !important;
+        position: relative;
+        overflow: hidden;
     }
     
-    .stTabs [data-baseweb="tab"]:hover { 
-        color: #FFD700 !important;
-        background: rgba(255, 215, 0, 0.1) !important;
+    .stTabs [data-baseweb="tab"]::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), transparent);
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        color: var(--gold-primary) !important;
+        transform: translateY(-2px);
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover::before {
+        opacity: 1;
     }
     
     .stTabs [aria-selected="true"] { 
-        background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.2)) !important;
-        color: #FFD700 !important;
-        font-weight: 700 !important;
+        background: linear-gradient(
+            135deg,
+            rgba(212, 175, 55, 0.2) 0%,
+            rgba(212, 175, 55, 0.1) 100%
+        ) !important;
+        color: var(--gold-light) !important;
+        font-weight: 600 !important;
+        box-shadow: 
+            0 10px 40px rgba(212, 175, 55, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(212, 175, 55, 0.3) !important;
     }
     
-    /* 버튼 */
+    /* 🔘 Buttons - Liquid Gold */
     .stButton > button { 
         width: 100% !important;
-        border-radius: 12px !important;
-        font-weight: 700 !important;
-        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%) !important;
-        color: #000 !important;
+        border-radius: 16px !important;
+        font-weight: 600 !important;
+        font-size: 15px !important;
+        letter-spacing: 1px !important;
+        text-transform: uppercase !important;
+        background: linear-gradient(
+            135deg,
+            var(--gold-primary) 0%,
+            var(--gold-dark) 50%,
+            var(--gold-primary) 100%
+        ) !important;
+        background-size: 200% 200% !important;
+        color: var(--black-deep) !important;
         border: none !important;
-        padding: 16px 32px !important;
-        box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3) !important;
-        transition: all 0.3s ease !important;
+        padding: 20px 40px !important;
+        position: relative !important;
+        overflow: hidden !important;
+        box-shadow: 
+            0 10px 40px rgba(212, 175, 55, 0.3),
+            0 4px 15px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+        transition: all 0.6s var(--transition-luxury) !important;
     }
     
-    .stButton > button:hover { 
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 30px rgba(255, 215, 0, 0.5) !important;
+    .stButton > button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.3),
+            transparent
+        );
+        transition: left 0.6s ease;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-4px) scale(1.02) !important;
+        box-shadow: 
+            0 20px 60px rgba(212, 175, 55, 0.4),
+            0 8px 25px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+        background-position: 100% 100% !important;
+    }
+    
+    .stButton > button:hover::before {
+        left: 100%;
+    }
+    
+    .stButton > button:active {
+        transform: translateY(-2px) scale(0.98) !important;
     }
     
     .stButton > button * { 
-        color: #000 !important; 
+        color: var(--black-deep) !important; 
+        font-weight: 700 !important;
     }
     
-    /* 다운로드 버튼 */
+    /* 📥 Download Button - Midnight Blue */
     .stDownloadButton > button { 
-        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%) !important;
-        color: #fff !important;
+        background: linear-gradient(
+            135deg,
+            #1a365d 0%,
+            #2c5282 50%,
+            #1a365d 100%
+        ) !important;
+        color: var(--white-soft) !important;
+        box-shadow: 
+            0 10px 40px rgba(26, 54, 93, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    .stDownloadButton > button:hover {
+        box-shadow: 
+            0 20px 60px rgba(26, 54, 93, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
     }
     
     .stDownloadButton > button * { 
-        color: #fff !important; 
+        color: var(--white-soft) !important; 
     }
     
-    /* 입력 필드 */
+    /* 📝 Input Fields - Floating Glass */
     .stTextInput > div > div > input,
     .stTextArea > div > div > textarea { 
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 215, 0, 0.2) !important;
-        border-radius: 12px !important;
-        color: #e0e0e0 !important;
-        padding: 14px 16px !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(212, 175, 55, 0.15) !important;
+        border-radius: 16px !important;
+        color: var(--white-soft) !important;
+        padding: 18px 24px !important;
+        font-size: 15px !important;
+        font-weight: 400 !important;
+        letter-spacing: 0.3px !important;
+        transition: all 0.4s var(--transition-luxury) !important;
+        box-shadow: 
+            inset 0 2px 10px rgba(0, 0, 0, 0.1),
+            0 1px 0 rgba(255, 255, 255, 0.03) !important;
+    }
+    
+    .stTextInput > div > div > input::placeholder,
+    .stTextArea > div > div > textarea::placeholder {
+        color: rgba(255, 255, 255, 0.3) !important;
+        font-weight: 300 !important;
     }
     
     .stTextInput > div > div > input:focus,
     .stTextArea > div > div > textarea:focus { 
-        border-color: #FFD700 !important;
-        box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2) !important;
+        border-color: var(--gold-primary) !important;
+        box-shadow: 
+            0 0 0 3px rgba(212, 175, 55, 0.1),
+            0 10px 40px rgba(212, 175, 55, 0.1),
+            inset 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        transform: translateY(-2px) !important;
     }
     
-    /* 셀렉트박스 */
-    .stSelectbox > div > div { 
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 215, 0, 0.2) !important;
-        border-radius: 12px !important;
+    /* 🔽 Select Box */
+    .stSelectbox > div > div {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(212, 175, 55, 0.15) !important;
+        border-radius: 16px !important;
     }
     
-    /* 알림 */
+    /* 📢 Alerts - Elegant Notifications */
     .stSuccess { 
-        background: rgba(76, 175, 80, 0.1) !important;
-        border: 1px solid rgba(76, 175, 80, 0.3) !important;
-        border-radius: 12px !important;
+        background: linear-gradient(
+            135deg,
+            rgba(72, 187, 120, 0.1) 0%,
+            rgba(72, 187, 120, 0.05) 100%
+        ) !important;
+        border: 1px solid rgba(72, 187, 120, 0.3) !important;
+        border-left: 4px solid #48bb78 !important;
+        border-radius: 16px !important;
+        backdrop-filter: blur(10px) !important;
     }
     
     .stWarning { 
-        background: rgba(255, 152, 0, 0.1) !important;
-        border: 1px solid rgba(255, 152, 0, 0.3) !important;
-        border-radius: 12px !important;
+        background: linear-gradient(
+            135deg,
+            rgba(237, 137, 54, 0.1) 0%,
+            rgba(237, 137, 54, 0.05) 100%
+        ) !important;
+        border: 1px solid rgba(237, 137, 54, 0.3) !important;
+        border-left: 4px solid #ed8936 !important;
+        border-radius: 16px !important;
     }
     
     .stError { 
-        background: rgba(244, 67, 54, 0.1) !important;
-        border: 1px solid rgba(244, 67, 54, 0.3) !important;
-        border-radius: 12px !important;
+        background: linear-gradient(
+            135deg,
+            rgba(245, 101, 101, 0.1) 0%,
+            rgba(245, 101, 101, 0.05) 100%
+        ) !important;
+        border: 1px solid rgba(245, 101, 101, 0.3) !important;
+        border-left: 4px solid #f56565 !important;
+        border-radius: 16px !important;
     }
     
     .stInfo { 
-        background: rgba(33, 150, 243, 0.1) !important;
-        border: 1px solid rgba(33, 150, 243, 0.3) !important;
-        border-radius: 12px !important;
+        background: linear-gradient(
+            135deg,
+            rgba(66, 153, 225, 0.1) 0%,
+            rgba(66, 153, 225, 0.05) 100%
+        ) !important;
+        border: 1px solid rgba(66, 153, 225, 0.3) !important;
+        border-left: 4px solid #4299e1 !important;
+        border-radius: 16px !important;
     }
     
-    /* 익스팬더 */
+    /* 📂 Expander */
     .streamlit-expanderHeader {
         background: rgba(255, 255, 255, 0.02) !important;
-        border: 1px solid rgba(255, 215, 0, 0.1) !important;
-        border-radius: 12px !important;
+        border: 1px solid rgba(212, 175, 55, 0.1) !important;
+        border-radius: 16px !important;
+        font-weight: 500 !important;
+        transition: all 0.4s ease !important;
     }
     
-    /* 커스텀 클래스 */
+    .streamlit-expanderHeader:hover {
+        background: rgba(212, 175, 55, 0.05) !important;
+        border-color: rgba(212, 175, 55, 0.2) !important;
+    }
+    
+    /* 🖱️ Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 100px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, var(--gold-primary), var(--gold-dark));
+        border-radius: 100px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, var(--gold-light), var(--gold-primary));
+    }
+    
+    /* ============================================
+       🎨 CUSTOM COMPONENT CLASSES
+       ============================================ */
+    
+    /* 🏠 Hero Section */
     .hero-section { 
         text-align: center;
-        padding: 60px 20px;
-        margin-bottom: 40px;
+        padding: 100px 40px 120px;
+        position: relative;
+    }
+    
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(
+            circle,
+            rgba(212, 175, 55, 0.08) 0%,
+            transparent 70%
+        );
+        pointer-events: none;
+        animation: breathe 4s ease-in-out infinite;
+    }
+    
+    .hero-overline {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 8px;
+        text-transform: uppercase;
+        color: var(--gold-primary);
+        margin-bottom: 24px;
+        opacity: 0.9;
+        animation: textReveal 1.5s var(--transition-luxury) forwards;
     }
     
     .hero-title { 
-        font-size: 56px;
-        font-weight: 900;
-        background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%);
+        font-family: 'Playfair Display', serif;
+        font-size: 72px;
+        font-weight: 500;
+        letter-spacing: -3px;
+        line-height: 1;
+        background: linear-gradient(
+            135deg,
+            var(--gold-light) 0%,
+            var(--gold-primary) 30%,
+            var(--white-pure) 50%,
+            var(--gold-primary) 70%,
+            var(--gold-light) 100%
+        );
         background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 16px;
-        animation: shimmer 3s linear infinite;
+        margin-bottom: 20px;
+        animation: luxuryShimmer 5s linear infinite;
+        position: relative;
+        z-index: 1;
     }
     
     .hero-subtitle { 
         font-size: 20px;
-        color: #888;
+        font-weight: 300;
+        letter-spacing: 3px;
+        color: rgba(255, 255, 255, 0.5);
+        position: relative;
+        z-index: 1;
     }
     
+    /* 📊 Score Card - Floating Luxury */
     .score-card { 
-        background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.05));
-        border: 2px solid rgba(255, 215, 0, 0.3);
-        border-radius: 24px;
-        padding: 40px;
+        background: linear-gradient(
+            135deg,
+            rgba(212, 175, 55, 0.08) 0%,
+            rgba(212, 175, 55, 0.02) 100%
+        );
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        border-radius: 32px;
+        padding: 60px 50px;
         text-align: center;
-        animation: glow 3s ease-in-out infinite;
+        position: relative;
+        overflow: hidden;
+        animation: subtleGlow 4s ease-in-out infinite;
+        transition: all 0.6s var(--transition-luxury);
+    }
+    
+    .score-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(
+            circle,
+            rgba(212, 175, 55, 0.1) 0%,
+            transparent 50%
+        );
+        animation: gentleFloat 6s ease-in-out infinite;
+        pointer-events: none;
+    }
+    
+    .score-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        border-color: rgba(212, 175, 55, 0.4);
     }
     
     .score-number { 
-        font-size: 80px;
-        font-weight: 900;
-        background: linear-gradient(135deg, #FFD700, #FFA500);
+        font-family: 'Playfair Display', serif;
+        font-size: 100px;
+        font-weight: 400;
+        background: linear-gradient(
+            135deg,
+            var(--gold-light) 0%,
+            var(--gold-primary) 50%,
+            var(--gold-light) 100%
+        );
+        background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         line-height: 1;
+        margin-bottom: 8px;
+        animation: luxuryShimmer 3s linear infinite;
+        position: relative;
+        z-index: 1;
     }
     
+    .score-label {
+        font-size: 14px;
+        font-weight: 400;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 24px;
+    }
+    
+    /* 📋 Info Card - Glass Panel */
     .info-card { 
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 215, 0, 0.15);
-        border-radius: 16px;
-        padding: 24px;
-        margin: 16px 0;
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.01) 100%
+        );
+        border: 1px solid rgba(212, 175, 55, 0.1);
+        border-radius: 24px;
+        padding: 32px;
+        margin: 20px 0;
+        backdrop-filter: blur(20px);
+        position: relative;
+        transition: all 0.5s var(--transition-luxury);
+        overflow: hidden;
+    }
+    
+    .info-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(212, 175, 55, 0.3),
+            transparent
+        );
     }
     
     .info-card:hover {
-        border-color: rgba(255, 215, 0, 0.3);
+        border-color: rgba(212, 175, 55, 0.25);
+        transform: translateY(-4px);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     }
     
+    /* 🏷️ Title Card */
     .title-card {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 215, 0, 0.15);
-        border-radius: 16px;
-        padding: 24px;
-        margin: 16px 0;
-    }
-    
-    .main-title {
-        font-size: 24px;
-        font-weight: 800;
-        color: #FFD700;
-        margin-bottom: 8px;
-    }
-    
-    .sub-title {
-        font-size: 16px;
-        color: #aaa;
-        margin-bottom: 16px;
-    }
-    
-    .section-label {
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 2px;
-        color: #FFD700;
-        text-transform: uppercase;
-        opacity: 0.8;
-    }
-    
-    .login-container { 
-        max-width: 400px;
-        margin: 100px auto;
-        padding: 50px 40px;
-        background: rgba(26, 26, 46, 0.8);
-        border: 1px solid rgba(255, 215, 0, 0.2);
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.03) 0%,
+            rgba(255, 255, 255, 0.01) 100%
+        );
+        border: 1px solid rgba(212, 175, 55, 0.1);
         border-radius: 24px;
-        text-align: center;
+        padding: 32px;
+        margin: 20px 0;
+        transition: all 0.5s var(--transition-luxury);
+        position: relative;
     }
     
-    .login-title { 
-        font-size: 36px;
-        font-weight: 900;
-        background: linear-gradient(135deg, #FFD700, #FFA500);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 8px;
-    }
-    
-    .login-subtitle {
-        font-size: 16px;
-        color: #888;
-    }
-    
-    .premium-footer {
-        text-align: center;
-        padding: 30px 20px;
-        margin-top: 60px;
-        border-top: 1px solid rgba(255, 215, 0, 0.1);
-        color: #666;
-    }
-    
-    .premium-footer-author {
-        color: #FFD700;
-        font-weight: 700;
-    }
-    
-    .quick-action-box {
-        background: rgba(255, 215, 0, 0.05);
-        border-left: 4px solid #FFD700;
-        border-radius: 8px;
-        padding: 16px 20px;
-        margin: 16px 0;
-    }
-    
-    .status-badge {
-        display: inline-block;
-        padding: 6px 16px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 700;
-    }
-    
-    .status-excellent {
-        background: rgba(76, 175, 80, 0.2);
-        color: #4CAF50;
-    }
-    
-    .status-good {
-        background: rgba(255, 152, 0, 0.2);
-        color: #FF9800;
-    }
-    
-    .status-warning {
-        background: rgba(244, 67, 54, 0.2);
-        color: #F44336;
-    }
-    
-    .empty-state {
-        text-align: center;
-        padding: 40px;
-        color: #666;
-    }
-    
-    .score-item {
-        display: flex;
-        justify-content: space-between;
-        padding: 12px 0;
-        border-bottom: 1px solid rgba(255, 215, 0, 0.1);
-    }
-    
-    .score-item-label { color: #ccc; }
-    .score-item-value { color: #FFD700; font-weight: 700; font-size: 20px; }
-    .score-item-reason { color: #888; font-size: 14px; margin-top: 4px; }
-    
-    .summary-box {
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 12px;
-        padding: 20px;
-        margin-top: 16px;
+    .title-card:hover {
+        border-color: rgba(212, 175, 55, 0.3);
+        transform: translateY(-4px) scale(1.01);
+        box-shadow: 0 20px 60px rgba(212, 175, 55, 0.1);
     }
     
     .card-number {
         font-size: 11px;
-        letter-spacing: 2px;
-        color: #FFD700;
-        opacity: 0.7;
-        margin-bottom: 12px;
+        font-weight: 600;
+        letter-spacing: 4px;
+        color: var(--gold-primary);
+        opacity: 0.6;
+        margin-bottom: 16px;
+    }
+    
+    .main-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 28px;
+        font-weight: 500;
+        color: var(--gold-light);
+        margin-bottom: 8px;
+        letter-spacing: -0.5px;
+    }
+    
+    .sub-title {
+        font-size: 16px;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 16px;
     }
     
     .reason {
         font-size: 14px;
-        color: #888;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.4);
+        line-height: 1.7;
+        font-style: italic;
+    }
+    
+    /* 🏷️ Section Label */
+    .section-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        color: var(--gold-primary);
+        opacity: 0.7;
+        margin-bottom: 8px;
+    }
+    
+    /* 🔐 Login Container */
+    .login-container { 
+        max-width: 440px;
+        margin: 120px auto;
+        padding: 70px 50px;
+        background: linear-gradient(
+            135deg,
+            rgba(30, 30, 30, 0.9) 0%,
+            rgba(20, 20, 20, 0.95) 100%
+        );
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        border-radius: 32px;
+        text-align: center;
+        backdrop-filter: blur(40px);
+        box-shadow: 
+            0 50px 100px rgba(0, 0, 0, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        animation: fadeInElegant 1s var(--transition-luxury) forwards;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .login-container::before {
+        content: '';
+        position: absolute;
+        top: -100%;
+        left: -100%;
+        width: 300%;
+        height: 300%;
+        background: radial-gradient(
+            circle,
+            rgba(212, 175, 55, 0.03) 0%,
+            transparent 50%
+        );
+        animation: gentleFloat 8s ease-in-out infinite;
+    }
+    
+    .login-title { 
+        font-family: 'Playfair Display', serif;
+        font-size: 42px;
+        font-weight: 500;
+        letter-spacing: -1px;
+        background: linear-gradient(135deg, var(--gold-light), var(--gold-primary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 8px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .login-subtitle {
+        font-size: 14px;
+        font-weight: 400;
+        letter-spacing: 2px;
+        color: rgba(255, 255, 255, 0.4);
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* 🦶 Footer */
+    .premium-footer {
+        text-align: center;
+        padding: 60px 20px 40px;
+        margin-top: 80px;
+        border-top: 1px solid rgba(212, 175, 55, 0.1);
+        position: relative;
+    }
+    
+    .premium-footer::before {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--gold-primary), transparent);
+    }
+    
+    .premium-footer-text {
+        font-size: 13px;
+        font-weight: 400;
+        letter-spacing: 2px;
+        color: rgba(255, 255, 255, 0.3);
+    }
+    
+    .premium-footer-author {
+        color: var(--gold-primary);
+        font-weight: 600;
+    }
+    
+    /* 🏷️ Status Badge */
+    .status-badge {
+        display: inline-block;
+        padding: 8px 20px;
+        border-radius: 100px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+    
+    .status-excellent {
+        background: rgba(72, 187, 120, 0.15);
+        color: #68d391;
+        border: 1px solid rgba(72, 187, 120, 0.3);
+    }
+    
+    .status-good {
+        background: rgba(237, 137, 54, 0.15);
+        color: #f6ad55;
+        border: 1px solid rgba(237, 137, 54, 0.3);
+    }
+    
+    .status-warning {
+        background: rgba(245, 101, 101, 0.15);
+        color: #fc8181;
+        border: 1px solid rgba(245, 101, 101, 0.3);
+    }
+    
+    /* 📊 Score Item */
+    .score-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 0;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.08);
+    }
+    
+    .score-item-label { 
+        color: rgba(255, 255, 255, 0.6);
+        font-weight: 400;
+        font-size: 15px;
+    }
+    
+    .score-item-value { 
+        color: var(--gold-primary);
+        font-family: 'Playfair Display', serif;
+        font-weight: 500;
+        font-size: 24px;
+    }
+    
+    .score-item-reason { 
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 13px;
+        margin-top: 4px;
+        font-weight: 300;
         line-height: 1.6;
     }
     
+    /* 📦 Summary Box */
+    .summary-box {
+        background: rgba(212, 175, 55, 0.05);
+        border-left: 3px solid var(--gold-primary);
+        border-radius: 0 16px 16px 0;
+        padding: 24px;
+        margin-top: 24px;
+    }
+    
+    .summary-box strong {
+        color: var(--gold-primary);
+        font-weight: 600;
+    }
+    
+    /* 🎯 Quick Action Box */
+    .quick-action-box {
+        background: linear-gradient(
+            135deg,
+            rgba(212, 175, 55, 0.08) 0%,
+            rgba(212, 175, 55, 0.02) 100%
+        );
+        border-left: 3px solid var(--gold-primary);
+        border-radius: 0 16px 16px 0;
+        padding: 20px 24px;
+        margin: 20px 0;
+    }
+    
+    /* 📭 Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 40px;
+        color: rgba(255, 255, 255, 0.3);
+    }
+    
+    .empty-state p {
+        margin: 8px 0;
+    }
+    
+    /* 🎯 Info Card Title */
     .info-card-title {
-        color: #FFD700;
-        font-weight: 700;
-        margin-bottom: 12px;
+        color: var(--gold-primary);
+        font-weight: 600;
+        margin-bottom: 16px;
+        font-size: 16px;
+    }
+    
+    /* 📱 Responsive */
+    @media (max-width: 768px) {
+        .hero-title { font-size: 48px; }
+        .score-number { font-size: 72px; }
+        .main .block-container { padding: 2rem !important; }
+        h1 { font-size: 2.5rem !important; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -499,7 +1033,7 @@ for key, value in default_states.items():
 # 사이드바
 # ==========================================
 with st.sidebar:
-    st.markdown("### 📊 Progress")
+    st.markdown("### ✦ Progress")
     progress_items = [
         bool(st.session_state['topic']),
         bool(st.session_state['target_persona']),
@@ -511,7 +1045,7 @@ with st.sidebar:
     st.caption(f"{progress:.0f}% 완료")
     
     st.markdown("---")
-    st.markdown("### 📋 Info")
+    st.markdown("### ✦ Overview")
     if st.session_state['topic']:
         st.caption(f"주제: {st.session_state['topic'][:20]}...")
     if st.session_state['book_title']:
@@ -520,25 +1054,25 @@ with st.sidebar:
         st.caption(f"목차: {len(st.session_state['outline'])}개 챕터")
     
     st.markdown("---")
-    st.markdown("### 💾 저장/불러오기")
+    st.markdown("### ✦ Save & Load")
     
     save_data = {k: st.session_state.get(k, v) for k, v in default_states.items()}
     save_json = json.dumps(save_data, ensure_ascii=False, indent=2)
     file_name = re.sub(r'[^\w\s가-힣-]', '', st.session_state.get('book_title', '전자책') or '전자책')[:20]
     
     st.download_button(
-        "📥 작업 저장하기", 
+        "저장하기", 
         save_json, 
         file_name=f"{file_name}_{datetime.now().strftime('%m%d_%H%M')}.json",
         mime="application/json",
         use_container_width=True
     )
     
-    uploaded_file = st.file_uploader("📤 작업 불러오기", type=['json'], label_visibility="collapsed")
+    uploaded_file = st.file_uploader("불러오기", type=['json'], label_visibility="collapsed")
     if uploaded_file:
         try:
             loaded_data = json.loads(uploaded_file.read().decode('utf-8'))
-            if st.button("불러오기 적용", use_container_width=True):
+            if st.button("적용하기", use_container_width=True):
                 for key in default_states.keys():
                     if key in loaded_data:
                         st.session_state[key] = loaded_data[key]
@@ -548,7 +1082,7 @@ with st.sidebar:
             st.error(f"파일 오류: {e}")
     
     st.markdown("---")
-    st.markdown("### 🔑 API 설정")
+    st.markdown("### ✦ API Key")
     
     if 'api_key' not in st.session_state:
         st.session_state['api_key'] = load_saved_api_key()
@@ -557,7 +1091,8 @@ with st.sidebar:
         "Gemini API 키",
         value=st.session_state['api_key'],
         type="password",
-        placeholder="AIza..."
+        placeholder="AIza...",
+        label_visibility="collapsed"
     )
     
     if api_key_input != st.session_state['api_key']:
@@ -565,17 +1100,9 @@ with st.sidebar:
         save_api_key(api_key_input)
     
     if st.session_state.get('api_key'):
-        st.caption("✅ API 키 입력됨")
+        st.caption("✦ API 키 입력됨")
     else:
-        st.caption("⚠️ API 키를 입력하세요")
-    
-    with st.expander("API 키 발급 방법"):
-        st.markdown("""
-        1. [Google AI Studio](https://aistudio.google.com/apikey) 접속
-        2. Google 계정으로 로그인
-        3. "API 키 만들기" 클릭
-        4. 생성된 키 복사 후 위에 붙여넣기
-        """)
+        st.caption("⚠ API 키를 입력하세요")
 
 # ==========================================
 # 헬퍼 함수들
@@ -797,8 +1324,9 @@ def generate_marketing_copy(title, subtitle, topic, persona):
 # ==========================================
 st.markdown("""
 <div class="hero-section">
+    <div class="hero-overline">Premium Ebook Studio</div>
     <div class="hero-title">CASHMAKER</div>
-    <div class="hero-subtitle">전자책 작성 프로그램</div>
+    <div class="hero-subtitle">쉽고, 빠른 전자책 수익화</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -806,12 +1334,12 @@ tabs = st.tabs(["① 주제 선정", "② 타겟 & 컨셉", "③ 목차 설계",
 
 # === TAB 1: 주제 선정 ===
 with tabs[0]:
-    st.markdown("## 주제 선정 & 적합도 분석")
+    st.markdown("## 주제 선정")
     
     col1, col2 = st.columns([1, 1])
     
     with col1:
-        st.markdown('<p class="section-label">STEP 01</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-label">Step 01</p>', unsafe_allow_html=True)
         st.markdown("### 주제 입력")
         
         topic_input = st.text_input(
@@ -827,14 +1355,14 @@ with tabs[0]:
         
         st.markdown("""
         <div class="info-card">
-            <div class="info-card-title">💡 좋은 주제의 조건</div>
-            <p>• 내가 직접 경험하고 성과를 낸 것</p>
-            <p>• 사람들이 돈 주고 배우고 싶어하는 것</p>
-            <p>• 구체적인 결과를 약속할 수 있는 것</p>
+            <div class="info-card-title">✦ 좋은 주제의 조건</div>
+            <p style="margin: 8px 0;">• 내가 직접 경험하고 성과를 낸 것</p>
+            <p style="margin: 8px 0;">• 사람들이 돈 주고 배우고 싶어하는 것</p>
+            <p style="margin: 8px 0;">• 구체적인 결과를 약속할 수 있는 것</p>
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("📊 적합도 분석하기", key="analyze_btn"):
+        if st.button("적합도 분석하기", key="analyze_btn"):
             if not topic_input:
                 st.error("주제를 입력해주세요.")
             else:
@@ -852,7 +1380,7 @@ with tabs[0]:
                         st.error("분석 결과 파싱 오류")
     
     with col2:
-        st.markdown('<p class="section-label">STEP 02</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-label">Step 02</p>', unsafe_allow_html=True)
         st.markdown("### 분석 결과")
         
         if st.session_state['topic_score'] is not None:
@@ -865,7 +1393,7 @@ with tabs[0]:
             st.markdown(f"""
             <div class="score-card">
                 <div class="score-number">{score}</div>
-                <div style="color: #888; margin-bottom: 12px;">종합 점수</div>
+                <div class="score-label">종합 점수</div>
                 <span class="status-badge {verdict_class}">{verdict}</span>
             </div>
             """, unsafe_allow_html=True)
@@ -890,19 +1418,20 @@ with tabs[0]:
         else:
             st.markdown("""
             <div class="empty-state">
-                <p>📊 분석 결과가 여기에 표시됩니다</p>
-                <p style="font-size: 14px;">주제를 입력하고 분석 버튼을 눌러주세요</p>
+                <p style="font-size: 48px; margin-bottom: 16px;">✦</p>
+                <p>분석 결과가 여기에 표시됩니다</p>
+                <p style="font-size: 13px; opacity: 0.6;">주제를 입력하고 분석 버튼을 눌러주세요</p>
             </div>
             """, unsafe_allow_html=True)
 
 # === TAB 2: 타겟 & 컨셉 ===
 with tabs[1]:
-    st.markdown("## 타겟 설정 & 제목 생성")
+    st.markdown("## 타겟 & 제목")
     
     col1, col2 = st.columns([1, 1])
     
     with col1:
-        st.markdown('<p class="section-label">STEP 01</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-label">Step 01</p>', unsafe_allow_html=True)
         st.markdown("### 타겟 정의")
         
         if not st.session_state['topic']:
@@ -927,10 +1456,10 @@ with tabs[1]:
         st.session_state['pain_points'] = pain_points
         
         st.markdown("---")
-        st.markdown('<p class="section-label">STEP 02</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-label">Step 02</p>', unsafe_allow_html=True)
         st.markdown("### 한 줄 컨셉")
         
-        if st.button("✨ 컨셉 생성하기", key="concept_btn"):
+        if st.button("컨셉 생성하기", key="concept_btn"):
             if st.session_state['topic'] and persona:
                 with st.spinner("생성 중..."):
                     st.session_state['one_line_concept'] = generate_concept(
@@ -948,10 +1477,10 @@ with tabs[1]:
             """, unsafe_allow_html=True)
     
     with col2:
-        st.markdown('<p class="section-label">STEP 03</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-label">Step 03</p>', unsafe_allow_html=True)
         st.markdown("### 제목 생성")
         
-        if st.button("🎯 제목 생성하기", key="title_btn"):
+        if st.button("제목 생성하기", key="title_btn"):
             if st.session_state['topic']:
                 with st.spinner("생성 중..."):
                     result = generate_titles_advanced(
@@ -982,7 +1511,7 @@ with tabs[1]:
                 """, unsafe_allow_html=True)
         
         st.markdown("---")
-        st.markdown('<p class="section-label">STEP 04</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-label">Step 04</p>', unsafe_allow_html=True)
         st.markdown("### 최종 선택")
         
         st.session_state['book_title'] = st.text_input(
@@ -1003,16 +1532,16 @@ with tabs[2]:
     col1, col2 = st.columns([1, 1])
     
     with col1:
-        st.markdown('<p class="section-label">목차 생성</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-label">Generate</p>', unsafe_allow_html=True)
         st.markdown("### 자동 목차 생성")
         
         if not st.session_state['topic']:
-            st.warning("💡 주제를 먼저 입력해주세요")
+            st.warning("주제를 먼저 입력해주세요")
             topic_here = st.text_input("주제", placeholder="예: 크몽으로 월 500만원 벌기", key="topic_tab3")
             if topic_here:
                 st.session_state['topic'] = topic_here
         
-        if st.button("🚀 목차 생성하기", key="outline_btn"):
+        if st.button("목차 생성하기", key="outline_btn"):
             if st.session_state['topic']:
                 with st.spinner("설계 중..."):
                     result = generate_outline(
@@ -1051,17 +1580,17 @@ with tabs[2]:
                                 'subtopic_data': {s: {'questions': [], 'answers': [], 'content': ''} for s in subtopics}
                             }
                         sync_full_outline()
-                        st.success(f"✅ {len(chapters)}개 챕터 생성됨!")
+                        st.success(f"✦ {len(chapters)}개 챕터 생성됨!")
                         st.rerun()
             else:
                 st.error("주제를 먼저 입력해주세요.")
         
         if st.session_state.get('full_outline'):
-            st.markdown("**📋 현재 목차**")
+            st.markdown("**현재 목차**")
             st.code(st.session_state['full_outline'], language=None)
     
     with col2:
-        st.markdown('<p class="section-label">목차 관리</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-label">Manage</p>', unsafe_allow_html=True)
         st.markdown("### 현재 목차")
         
         if st.session_state['outline']:
@@ -1071,7 +1600,7 @@ with tabs[2]:
                     for j, st_name in enumerate(subtopics):
                         st.write(f"  {j+1}. {st_name}")
             
-            if st.button("➕ 새 챕터 추가", key="add_chapter"):
+            if st.button("새 챕터 추가", key="add_chapter"):
                 new_name = f"챕터{len(st.session_state['outline'])+1}: 새 챕터"
                 st.session_state['outline'].append(new_name)
                 st.session_state['chapters'][new_name] = {'subtopics': [], 'subtopic_data': {}}
@@ -1080,8 +1609,9 @@ with tabs[2]:
         else:
             st.markdown("""
             <div class="empty-state">
-                <p>📝 목차가 없습니다</p>
-                <p style="font-size: 14px;">왼쪽에서 목차를 생성해주세요</p>
+                <p style="font-size: 48px; margin-bottom: 16px;">✦</p>
+                <p>목차가 없습니다</p>
+                <p style="font-size: 13px; opacity: 0.6;">왼쪽에서 목차를 생성해주세요</p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -1090,10 +1620,10 @@ with tabs[3]:
     st.markdown("## 본문 작성")
     
     if not st.session_state['outline']:
-        st.warning("⚠️ 먼저 '③ 목차 설계' 탭에서 목차를 작성해주세요.")
+        st.warning("먼저 '③ 목차 설계' 탭에서 목차를 작성해주세요.")
         st.stop()
     
-    selected_chapter = st.selectbox("📚 챕터 선택", st.session_state['outline'], key="chapter_select")
+    selected_chapter = st.selectbox("챕터 선택", st.session_state['outline'], key="chapter_select")
     
     if selected_chapter not in st.session_state['chapters']:
         st.session_state['chapters'][selected_chapter] = {'subtopics': [], 'subtopic_data': {}}
@@ -1103,18 +1633,18 @@ with tabs[3]:
     st.markdown("---")
     
     if chapter_data.get('subtopics'):
-        with st.expander(f"📋 소제목 ({len(chapter_data['subtopics'])}개)", expanded=True):
+        with st.expander(f"소제목 ({len(chapter_data['subtopics'])}개)", expanded=True):
             for j, st_name in enumerate(chapter_data['subtopics']):
                 has_content = bool(chapter_data.get('subtopic_data', {}).get(st_name, {}).get('content'))
-                icon = "✅" if has_content else "⬜"
+                icon = "✦" if has_content else "○"
                 st.write(f"{icon} {j+1}. {st_name}")
         
-        st.markdown("### ✍️ 본문 작성")
+        st.markdown("### 본문 작성")
         
         selected_subtopic = st.selectbox(
             "작성할 소제목",
             chapter_data['subtopics'],
-            format_func=lambda x: f"{'✅' if chapter_data.get('subtopic_data', {}).get(x, {}).get('content') else '⬜'} {x}"
+            format_func=lambda x: f"{'✦' if chapter_data.get('subtopic_data', {}).get(x, {}).get('content') else '○'} {x}"
         )
         
         if selected_subtopic:
@@ -1126,7 +1656,7 @@ with tabs[3]:
             col1, col2 = st.columns([1, 1])
             
             with col1:
-                st.markdown("#### 🎤 인터뷰")
+                st.markdown("#### 인터뷰")
                 
                 if st.button("질문 생성하기", key="gen_q"):
                     with st.spinner("생성 중..."):
@@ -1152,12 +1682,12 @@ with tabs[3]:
                         )
             
             with col2:
-                st.markdown("#### 📝 본문")
+                st.markdown("#### 본문")
                 
                 has_answers = st_data.get('questions') and any(a.strip() for a in st_data.get('answers', []))
                 
                 if has_answers:
-                    if st.button("✨ 본문 생성하기", key="gen_content"):
+                    if st.button("본문 생성하기", key="gen_content"):
                         with st.spinner("집필 중..."):
                             content = generate_subtopic_content(
                                 selected_subtopic, selected_chapter,
@@ -1167,7 +1697,7 @@ with tabs[3]:
                             st_data['content'] = content
                             st.rerun()
                 else:
-                    st.info("👈 먼저 인터뷰 질문에 답변해주세요.")
+                    st.info("먼저 인터뷰 질문에 답변해주세요.")
                 
                 content = st.text_area(
                     "본문 내용",
@@ -1179,13 +1709,13 @@ with tabs[3]:
                 st_data['content'] = content
                 
                 if content:
-                    st.caption(f"📊 {calculate_char_count(content):,}자")
+                    st.caption(f"✦ {calculate_char_count(content):,}자")
     else:
         st.warning("소제목이 없습니다. 목차 탭에서 추가해주세요.")
 
 # === TAB 5: 문체 다듬기 ===
 with tabs[4]:
-    st.markdown("## 문체 다듬기 & 품질 검사")
+    st.markdown("## 문체 다듬기")
     
     content_options = []
     for ch in st.session_state['outline']:
@@ -1203,7 +1733,7 @@ with tabs[4]:
             selected = st.selectbox("다듬을 콘텐츠", content_options, key="refine_select")
             style = st.selectbox("스타일", ["친근한", "전문적", "직설적", "스토리텔링"])
             
-            if st.button("✨ 다듬기", key="refine_btn"):
+            if st.button("다듬기", key="refine_btn"):
                 parts = selected.split(" > ")
                 if len(parts) == 2:
                     content = st.session_state['chapters'][parts[0]]['subtopic_data'][parts[1]]['content']
@@ -1226,7 +1756,7 @@ with tabs[4]:
         st.markdown("### 품질 검사")
         
         if content_options:
-            if st.button("🔍 베스트셀러 체크", key="quality_btn"):
+            if st.button("베스트셀러 체크", key="quality_btn"):
                 parts = selected.split(" > ")
                 if len(parts) == 2:
                     content = st.session_state['chapters'][parts[0]]['subtopic_data'][parts[1]]['content']
@@ -1243,12 +1773,12 @@ with tabs[4]:
 
 # === TAB 6: 최종 출력 ===
 with tabs[5]:
-    st.markdown("## 최종 출력 & 마케팅")
+    st.markdown("## 최종 출력")
     
     col1, col2 = st.columns([1.5, 1])
     
     with col1:
-        st.markdown("### 📥 다운로드")
+        st.markdown("### 다운로드")
         
         book_title = st.text_input("전자책 제목", st.session_state.get('book_title', ''), key="final_title")
         subtitle = st.text_input("부제", st.session_state.get('subtitle', ''), key="final_subtitle")
@@ -1278,18 +1808,18 @@ with tabs[5]:
         
         col_d1, col_d2 = st.columns(2)
         with col_d1:
-            st.download_button("📄 TXT", full_txt, f"{book_title or 'ebook'}.txt", "text/plain", use_container_width=True)
+            st.download_button("TXT 다운로드", full_txt, f"{book_title or 'ebook'}.txt", "text/plain", use_container_width=True)
         with col_d2:
-            st.download_button("🌐 HTML", html_doc, f"{book_title or 'ebook'}.html", "text/html", use_container_width=True)
+            st.download_button("HTML 다운로드", html_doc, f"{book_title or 'ebook'}.html", "text/html", use_container_width=True)
         
         st.markdown("---")
         all_content = get_all_content_text()
         if all_content:
             chars = calculate_char_count(all_content)
-            st.success(f"✅ 총 {chars:,}자 | 약 {chars//500}페이지")
+            st.success(f"✦ 총 {chars:,}자 | 약 {chars//500}페이지")
     
     with col2:
-        st.markdown("### 📣 마케팅 카피")
+        st.markdown("### 마케팅 카피")
         
         if st.button("카피 생성하기", key="marketing_btn"):
             with st.spinner("생성 중..."):
@@ -1311,6 +1841,7 @@ with tabs[5]:
 # 푸터
 st.markdown("""
 <div class="premium-footer">
-    전자책 작성 프로그램 — <span class="premium-footer-author">남현우 작가</span>
+    <span class="premium-footer-text">전자책 작성 프로그램 — </span>
+    <span class="premium-footer-author">남현우 작가</span>
 </div>
 """, unsafe_allow_html=True)
